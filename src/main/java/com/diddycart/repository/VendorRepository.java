@@ -12,4 +12,7 @@ public interface VendorRepository extends JpaRepository<Vendor, Long> {
 
     // Find the vendor profile associated with a user
     Optional<Vendor> findByUser(User user);
+
+    // find vendor by user id
+    Optional<Vendor> findByUserId(Long id);
 }

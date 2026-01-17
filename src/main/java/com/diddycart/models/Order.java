@@ -37,6 +37,7 @@ public class Order {
     private String street;
     private String landmark;
     private String city;
+    private String state;
     private String pincode;
 
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -48,6 +49,14 @@ public class Order {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public String getState() {
+        return state;
+    }
+
+    public void setState(String state) {
+        this.state = state;
     }
 
     public User getUser() {
