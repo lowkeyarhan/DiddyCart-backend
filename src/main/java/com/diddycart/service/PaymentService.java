@@ -23,7 +23,7 @@ public class PaymentService {
 
     // Process Payment for an Order
     @Transactional
-    public Payment processPayment(Long orderId, String mode) {
+    public Payment processPayment(Long orderId, PaymentMode mode) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found"));
 
@@ -35,7 +35,7 @@ public class PaymentService {
         Payment payment = new Payment();
         payment.setOrder(order);
         payment.setAmount(order.getTotal());
-        payment.setMode(PaymentMode.valueOf(mode.toUpperCase())); // e.g. "CARD", "UPI"
+        payment.setMode(mode);
         payment.setStatus(PaymentStatus.COMPLETED);
         payment.setTransactionId(UUID.randomUUID().toString());
 

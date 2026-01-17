@@ -11,9 +11,10 @@ This project focuses on **clean architecture, security, scalability, and real-wo
 DiddyCart is a backend system that powers an online shopping application where:
 
 - Users can browse products and place orders
-- Vendors can manage products and inventory
-- Admins can monitor analytics and system health
-- Payments, emails, file uploads, and external APIs are integrated
+- Users can manage a cart (add/remove/clear items)
+- Orders are created from the cart with address snapshotting
+- Payments can be processed in-app (currently simulated)
+- Products support images uploaded to the local filesystem
 
 The backend is **API-driven**, **stateless**, and follows **RESTful principles** with proper authentication and authorization.
 
@@ -23,97 +24,81 @@ The backend is **API-driven**, **stateless**, and follows **RESTful principles**
 
 ### 🔐 Authentication & Authorization
 
-- User registration & login
-- Password hashing using bcrypt
-- JWT-based authentication
-- Role-based access control (USER, VENDOR, ADMIN)
-- Protected routes using middleware
+- User registration & login (service layer implemented)
+- Password hashing using BCrypt
+- JWT-based, stateless authentication (custom `JwtAuthenticationFilter`)
+- Role-based access control via Spring Security roles (`USER`, `VENDOR`, `ADMIN`)
+- Public routes: `/api/auth/**`, `/api/products/**` (per `SecurityConfig`)
 
 ---
 
 ### 🏪 Vendor Management
 
-- Vendor onboarding
-- Each product is linked to a vendor
-- Vendor-only product creation & updates
-- Vendor analytics access
+- Products are linked to a `Vendor`.
+- Product creation in `ProductService.addProduct(...)` expects a `vendorUserId` and looks up the vendor profile.
+- API/controller layer for vendor onboarding and vendor-only product management is not present in this repo yet.
 
 ---
 
 ### 📦 Product Management
 
-- Product CRUD operations
-- Product images upload
-- Category-based filtering
-- Stock and price management
+- Product creation (service layer) with optional image upload
+- Product listing with pagination (`Pageable`)
+- Name search with pagination
+- Stock quantity stored on `Product` and used for cart/order validation
 
 ---
 
-### 🛒 Order & Payment Flow
+### 🛒 Cart, Orders & Payments
 
-- Cart-to-order workflow
-- Order status tracking
-- Payment gateway integration (Stripe / Razorpay)
-- Secure webhook handling
+- Cart lifecycle: get/create cart, add items, remove items, clear cart
+- Order placement from cart (deducts stock, snapshots price + shipping address)
+- Order status + payment status enums are present and used
+- Payment processing is currently simulated (generates a UUID transaction id and marks payment `COMPLETED`)
 
 ---
 
 ### ☁️ File Uploads
 
-- Product image uploads
-- Cloud storage using Supabase Storage
-- Signed URLs for secure access
-
----
-
-### 📧 Email System
-
-- SMTP-based email sending
-- Order confirmation emails
-- Vendor notifications
-
----
-
-### 📊 Analytics
-
-- Order analytics
-- Revenue tracking
-- User activity tracking
-- Admin-only analytics APIs
+- Product image uploads are stored locally under `./uploads/` (relative to project working directory)
+- Database stores a relative URL like `/uploads/<filename>`
 
 ---
 
 ### 🛡️ Security
 
-- Rate limiting
-- SQL injection prevention
-- Secure HTTP headers (Helmet)
-- Centralized error handling
+- Spring Security + JWT filter + stateless sessions
+- `ADMIN`-only route namespace reserved at `/api/admin/**` (authorization is configured)
 
 ---
 
 ## 🧠 Application Flow
 
-### User Authentication
+### 1) User Authentication
 
-1. User registers/logs in
-2. Password is hashed
-3. JWT token is generated
-4. Token is sent in headers for protected APIs
+1. Client calls register/login
+2. Passwords are stored hashed (BCrypt)
+3. JWT is generated and returned in the auth response
+4. Client sends `Authorization: Bearer <token>` for protected routes
 
-### Product Browsing
+### 2) Product Browsing
 
-1. Public APIs fetch products
-2. Pagination and filters applied
-3. Vendor details attached
+1. Public product endpoints are allowed by security config (`/api/products/**`)
+2. Product listing/search use pagination (`Pageable`)
+3. Responses include category + vendor store name + image URLs (when present)
 
-### Order Placement
+### 3) Cart → Order
 
-1. User adds products to cart
-2. Order is created
-3. Payment intent generated
-4. Payment verified via webhook
-5. Order status updated
+1. User adds products to cart (stock is validated)
+2. User places an order with shipping address fields
+3. Service deducts stock, snapshots price/address, saves order items, and clears the cart
+
+### 4) Payment
+
+1. User processes payment for an order with a selected mode (e.g. `CARD`, `UPI`)
+2. Payment is recorded and order payment status is marked `COMPLETED`
+
+> Current limitation: `OrderService.getUserOrders(...)` is stubbed and returns all orders.
 
 ---
 

@@ -3,6 +3,7 @@ package com.diddycart.service;
 import com.diddycart.dto.user.AuthResponse;
 import com.diddycart.dto.user.LoginRequest;
 import com.diddycart.dto.user.RegisterRequest;
+import com.diddycart.dto.user.UserProfileResponse;
 import com.diddycart.enums.UserRole;
 import com.diddycart.models.User;
 import com.diddycart.models.Cart;
@@ -84,6 +85,21 @@ public class AuthService {
         response.setName(user.getName());
         response.setRole(user.getRole());
         response.setUserId(user.getId());
+
+        return response;
+    }
+
+    // Fetch User Profile
+    public UserProfileResponse getUserProfile(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        UserProfileResponse response = new UserProfileResponse();
+        response.setId(user.getId());
+        response.setName(user.getName());
+        response.setEmail(user.getEmail());
+        response.setPhone(user.getPhone());
+        response.setRole(user.getRole());
 
         return response;
     }

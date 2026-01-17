@@ -39,8 +39,6 @@ public class FileService {
             return;
         }
 
-        // Extract filename from URL path (e.g., "/uploads/filename.jpg" ->
-        // "filename.jpg")
         String fileName = imageUrl.replace("/uploads/", "");
         Path filePath = Paths.get(UPLOAD_DIR + fileName);
 

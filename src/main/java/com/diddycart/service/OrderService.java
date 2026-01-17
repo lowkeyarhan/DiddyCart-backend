@@ -6,7 +6,10 @@ import com.diddycart.enums.PaymentStatus;
 import com.diddycart.models.*;
 import com.diddycart.repository.OrderRepository;
 import com.diddycart.repository.ProductRepository;
+import com.diddycart.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,6 +29,10 @@ public class OrderService {
     @Autowired
     private ProductRepository productRepository;
 
+    @Autowired
+    private UserRepository userRepository;
+
+    // Place Order
     @Transactional
     public Order placeOrder(Long userId, OrderRequest req) {
 
@@ -86,9 +93,65 @@ public class OrderService {
         return savedOrder;
     }
 
-    public List<Order> getUserOrders(Long userId) {
-        // You need to add findByUserId in OrderRepository, or use User object
-        // Assuming findByUserId exists or fetching via User entity
-        return orderRepository.findAll(); // Simplified; Ideally: orderRepository.findByUserId(userId);
+    // Get Orders for User (with pagination)
+    public Page<Order> getUserOrders(Long userId, Pageable pageable) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        return orderRepository.findByUser(user, pageable);
+    }
+
+    // Get Order by ID
+    public Order getOrderById(Long orderId, Long userId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found with id: " + orderId));
+
+        // Verify ownership
+        if (!order.getUser().getId().equals(userId)) {
+            throw new RuntimeException("You are not authorized to view this order");
+        }
+
+        return order;
+    }
+
+    // Get All Orders (Admin only) - with pagination
+    public Page<Order> getAllOrders(Pageable pageable) {
+        return orderRepository.findAll(pageable);
+    }
+
+    // Update Order Status (Admin only)
+    @Transactional
+    public Order updateOrderStatus(Long orderId, OrderStatus status) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found with id: " + orderId));
+
+        order.setStatus(status);
+        return orderRepository.save(order);
+    }
+
+    // Cancel Order (User/Admin)
+    @Transactional
+    public Order cancelOrder(Long orderId, Long userId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found with id: " + orderId));
+
+        // Verify ownership
+        if (!order.getUser().getId().equals(userId)) {
+            throw new RuntimeException("You are not authorized to cancel this order");
+        }
+
+        // Only allow cancellation if order is still PENDING
+        if (order.getStatus() != OrderStatus.PENDING) {
+            throw new RuntimeException("Cannot cancel order. Current status: " + order.getStatus());
+        }
+
+        // Restore stock
+        for (OrderItem item : order.getOrderItems()) {
+            Product product = item.getProduct();
+            product.setStockQuantity(product.getStockQuantity() + item.getQuantity());
+            productRepository.save(product);
+        }
+
+        order.setStatus(OrderStatus.CANCELLED);
+        return orderRepository.save(order);
     }
 }

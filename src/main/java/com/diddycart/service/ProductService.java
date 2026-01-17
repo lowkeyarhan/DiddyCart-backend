@@ -72,9 +72,89 @@ public class ProductService {
         return productRepository.findAll(pageable).map(this::mapToResponse);
     }
 
+    // Get Product by ID
+    public ProductResponse getProductById(Long id) {
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Product not found with id: " + id));
+        return mapToResponse(product);
+    }
+
     // Search products by name
     public Page<ProductResponse> searchProducts(String keyword, Pageable pageable) {
         return productRepository.findByNameContainingIgnoreCase(keyword, pageable).map(this::mapToResponse);
+    }
+
+    // Update Product
+    public Product updateProduct(Long id, ProductRequest req, MultipartFile image, Long vendorUserId)
+            throws IOException {
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Product not found with id: " + id));
+
+        // Verify ownership
+        if (!product.getVendor().getUser().getId().equals(vendorUserId)) {
+            throw new RuntimeException("You are not authorized to update this product");
+        }
+
+        // Update fields
+        product.setName(req.getName());
+        product.setDescription(req.getDescription());
+        product.setPrice(req.getPrice());
+        product.setStockQuantity(req.getStockQuantity());
+
+        Category category = categoryRepository.findById(req.getCategoryId())
+                .orElseThrow(() -> new RuntimeException("Category not found"));
+        product.setCategory(category);
+
+        // Handle Image Update
+        if (image != null && !image.isEmpty()) {
+            // Remove old images
+            if (product.getImages() != null && !product.getImages().isEmpty()) {
+                for (ProductImage oldImage : product.getImages()) {
+                    try {
+                        fileService.removeImage(oldImage.getImageUrl());
+                    } catch (IOException e) {
+                        // Log but don't fail the update
+                    }
+                }
+                product.getImages().clear();
+            }
+
+            // Add new image
+            String imageUrl = fileService.uploadImage(image);
+            ProductImage productImage = new ProductImage();
+            productImage.setImageUrl(imageUrl);
+            productImage.setProduct(product);
+
+            if (product.getImages() == null)
+                product.setImages(new ArrayList<>());
+            product.getImages().add(productImage);
+        }
+
+        return productRepository.save(product);
+    }
+
+    // Delete Product
+    public void deleteProduct(Long id, Long vendorUserId) throws IOException {
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Product not found with id: " + id));
+
+        // Verify ownership
+        if (!product.getVendor().getUser().getId().equals(vendorUserId)) {
+            throw new RuntimeException("You are not authorized to delete this product");
+        }
+
+        // Remove images from filesystem
+        if (product.getImages() != null) {
+            for (ProductImage image : product.getImages()) {
+                try {
+                    fileService.removeImage(image.getImageUrl());
+                } catch (IOException e) {
+                    // Log but continue deletion
+                }
+            }
+        }
+
+        productRepository.delete(product);
     }
 
     // Helper: Map to DTO
