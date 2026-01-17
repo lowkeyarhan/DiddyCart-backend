@@ -1,70 +1,66 @@
 package com.diddycart.models;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-
-import java.time.Instant;
-import java.util.UUID;
+import jakarta.persistence.*;
 
 @Entity
 @Table(name = "vendors")
 public class Vendor {
 
     @Id
-    @GeneratedValue
-    private UUID id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-    @Column(name = "name", nullable = false)
-    private String name;
+    // OneToOne because one user is one vendor
+    @OneToOne
+    @JoinColumn(name = "user_id", unique = true, nullable = false)
+    private User user;
 
-    @Column(name = "email", nullable = false, unique = true)
-    private String email;
+    @Column(name = "store_name", nullable = false)
+    private String storeName;
 
-    @Column(name = "is_active")
-    private boolean isActive = true;
+    @Column(name = "gstin", nullable = false, unique = true)
+    private String gstin;
 
-    @Column(name = "created_at")
-    private Instant createdAt;
+    @Column(name = "description", columnDefinition = "TEXT")
+    private String description;
 
-    @Column(name = "updated_at")
-    private Instant updatedAt;
-
-    public UUID getId() {
+    public Long getId() {
         return id;
     }
 
-    public String getName() {
-        return name;
+    public void setId(Long id) {
+        this.id = id;
     }
 
-    public String getEmail() {
-        return email;
+    public User getUser() {
+        return user;
     }
 
-    public boolean isActive() {
-        return isActive;
+    public void setUser(User user) {
+        this.user = user;
     }
 
-    public Instant getCreatedAt() {
-        return createdAt;
+    public String getStoreName() {
+        return storeName;
     }
 
-    public Instant getUpdatedAt() {
-        return updatedAt;
+    public void setStoreName(String storeName) {
+        this.storeName = storeName;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public String getGstin() {
+        return gstin;
     }
 
-    public void setEmail(String email) {
-        this.email = email;
+    public void setGstin(String gstin) {
+        this.gstin = gstin;
     }
 
-    public void setActive(boolean active) {
-        isActive = active;
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
     }
 }

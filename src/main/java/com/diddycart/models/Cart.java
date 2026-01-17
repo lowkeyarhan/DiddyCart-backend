@@ -1,44 +1,44 @@
 package com.diddycart.models;
 
 import jakarta.persistence.*;
-import java.time.Instant;
-import java.util.UUID;
+import java.util.List;
 
 @Entity
-@Table(name = "carts")
+@Table(name = "cart")
 public class Cart {
 
     @Id
-    @GeneratedValue
-    private UUID id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-    @Column(name = "user_id", nullable = false, unique = true)
-    private UUID userId;
+    @OneToOne
+    @JoinColumn(name = "user_id")
+    private User user; // Nullable for guests
 
-    @Column(name = "created_at")
-    private Instant createdAt = Instant.now();
+    @OneToMany(mappedBy = "cart", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<CartItem> items;
 
-    public UUID getId() {
+    public Long getId() {
         return id;
     }
 
-    public UUID getUserId() {
-        return userId;
-    }
-
-    public void setId(UUID id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
-    public void setUserId(UUID userId) {
-        this.userId = userId;
+    public User getUser() {
+        return user;
     }
 
-    public Instant getCreatedAt() {
-        return createdAt;
+    public void setUser(User user) {
+        this.user = user;
     }
 
-    public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
+    public List<CartItem> getItems() {
+        return items;
+    }
+
+    public void setItems(List<CartItem> items) {
+        this.items = items;
     }
 }

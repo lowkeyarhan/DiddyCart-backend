@@ -1,76 +1,54 @@
 package com.diddycart.models;
 
+import com.diddycart.enums.PaymentMode;
+import com.diddycart.enums.PaymentStatus;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.UUID;
 
 @Entity
-@Table(name = "payments")
+@Table(name = "payment")
 public class Payment {
 
     @Id
-    @GeneratedValue
-    private UUID id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-    @Column(name = "order_id", nullable = false, unique = true)
-    private UUID orderId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "order_id", nullable = false)
+    private Order order;
 
-    @Column(nullable = false)
-    private String provider;
-    // STRIPE, RAZORPAY
-
-    @Column(name = "provider_payment_id")
-    private String providerPaymentId;
-
-    @Column(nullable = false)
-    private String status;
-    // INITIATED, SUCCESS, FAILED
-
-    @Column(nullable = false)
+    @Column(name = "amount", nullable = false)
     private BigDecimal amount;
 
-    @Column(name = "created_at")
+    @Enumerated(EnumType.STRING)
+    @Column(name = "mode", nullable = false)
+    private PaymentMode mode;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false)
+    private PaymentStatus status;
+
+    @Column(name = "transaction_id")
+    private String transactionId;
+
+    @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
 
-    public UUID getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(UUID id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
-    public UUID getOrderId() {
-        return orderId;
+    public Order getOrder() {
+        return order;
     }
 
-    public void setOrderId(UUID orderId) {
-        this.orderId = orderId;
-    }
-
-    public String getProvider() {
-        return provider;
-    }
-
-    public void setProvider(String provider) {
-        this.provider = provider;
-    }
-
-    public String getProviderPaymentId() {
-        return providerPaymentId;
-    }
-
-    public void setProviderPaymentId(String providerPaymentId) {
-        this.providerPaymentId = providerPaymentId;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
+    public void setOrder(Order order) {
+        this.order = order;
     }
 
     public BigDecimal getAmount() {
@@ -79,6 +57,30 @@ public class Payment {
 
     public void setAmount(BigDecimal amount) {
         this.amount = amount;
+    }
+
+    public PaymentMode getMode() {
+        return mode;
+    }
+
+    public void setMode(PaymentMode mode) {
+        this.mode = mode;
+    }
+
+    public PaymentStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(PaymentStatus status) {
+        this.status = status;
+    }
+
+    public String getTransactionId() {
+        return transactionId;
+    }
+
+    public void setTransactionId(String transactionId) {
+        this.transactionId = transactionId;
     }
 
     public Instant getCreatedAt() {

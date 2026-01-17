@@ -117,201 +117,179 @@ The backend is **API-driven**, **stateless**, and follows **RESTful principles**
 
 ---
 
-## 📁 Project Structure
-
-```
-src/
-│
-├── config/
-│   ├── db.js
-│   ├── supabase.js
-│   └── env.js
-│
-├── middlewares/
-│   ├── auth.middleware.js
-│   ├── role.middleware.js
-│   ├── rateLimiter.js
-│   └── error.middleware.js
-│
-├── controllers/
-│   ├── auth.controller.js
-│   ├── product.controller.js
-│   ├── order.controller.js
-│   ├── vendor.controller.js
-│   └── analytics.controller.js
-│
-├── services/
-│   ├── auth.service.js
-│   ├── payment.service.js
-│   ├── email.service.js
-│   └── upload.service.js
-│
-├── routes/
-│   ├── auth.routes.js
-│   ├── product.routes.js
-│   ├── order.routes.js
-│   ├── vendor.routes.js
-│   └── analytics.routes.js
-│
-├── models/
-│   ├── user.model.js
-│   ├── vendor.model.js
-│   ├── product.model.js
-│   ├── order.model.js
-│   └── payment.model.js
-│
-├── utils/
-│   ├── jwt.js
-│   ├── logger.js
-│   └── constants.js
-│
-└── app.js
-```
-
----
-
 ## 🗄️ Database Schema (PostgreSQL)
 
-### Users Table
+This project uses Spring Data JPA entities (see `src/main/java/com/diddycart/models`) and is designed for PostgreSQL. Check out at https://drawsql.app/teams/arhan-das/diagrams/diddycart
 
-| Column     | Type      | Constraints           |
-| ---------- | --------- | --------------------- |
-| id         | UUID      | PK                    |
-| name       | VARCHAR   | NOT NULL              |
-| email      | VARCHAR   | UNIQUE                |
-| password   | TEXT      | HASHED                |
-| role       | ENUM      | USER / VENDOR / ADMIN |
-| created_at | TIMESTAMP | DEFAULT NOW           |
+### ✅ Tables (as implemented by entities)
 
----
+> Note: IDs are `BIGINT` (`@GeneratedValue(strategy = IDENTITY)`) in the current codebase.
 
-### Vendors Table
+#### `users`
 
-| Column      | Type      | Constraints    |
-| ----------- | --------- | -------------- |
-| id          | UUID      | PK             |
-| user_id     | UUID      | FK → users(id) |
-| shop_name   | VARCHAR   | NOT NULL       |
-| is_verified | BOOLEAN   | DEFAULT FALSE  |
-| created_at  | TIMESTAMP | DEFAULT NOW    |
+| Column     | Type           | Constraints                          |
+| ---------- | -------------- | ------------------------------------ |
+| id         | BIGINT         | PK                                   |
+| name       | VARCHAR        | NOT NULL                             |
+| email      | VARCHAR        | NOT NULL, UNIQUE                     |
+| phone      | VARCHAR        | NULL                                 |
+| password   | VARCHAR/TEXT   | NOT NULL (hashed)                    |
+| role       | VARCHAR (enum) | NOT NULL (`USER`, `ADMIN`, `VENDOR`) |
+| created_at | TIMESTAMP      | NOT NULL                             |
+| updated_at | TIMESTAMP      | NULL                                 |
 
----
+#### `vendors`
 
-### Products Table
+| Column      | Type    | Constraints                              |
+| ----------- | ------- | ---------------------------------------- |
+| id          | BIGINT  | PK                                       |
+| user_id     | BIGINT  | FK → `users(id)`, NOT NULL, UNIQUE (1:1) |
+| store_name  | VARCHAR | NOT NULL                                 |
+| gstin       | VARCHAR | NOT NULL, UNIQUE                         |
+| description | TEXT    | NULL                                     |
 
-| Column      | Type      | Constraints      |
-| ----------- | --------- | ---------------- |
-| id          | UUID      | PK               |
-| vendor_id   | UUID      | FK → vendors(id) |
-| name        | VARCHAR   | NOT NULL         |
-| description | TEXT      |                  |
-| price       | DECIMAL   | NOT NULL         |
-| stock       | INTEGER   |                  |
-| image_url   | TEXT      |                  |
-| created_at  | TIMESTAMP | DEFAULT NOW      |
+#### `category`
 
----
+| Column      | Type    | Constraints |
+| ----------- | ------- | ----------- |
+| id          | BIGINT  | PK          |
+| type        | VARCHAR | NOT NULL    |
+| description | TEXT    | NULL        |
 
-### Orders Table
+#### `products`
 
-| Column       | Type      | Constraints              |
-| ------------ | --------- | ------------------------ |
-| id           | UUID      | PK                       |
-| user_id      | UUID      | FK → users(id)           |
-| total_amount | DECIMAL   |                          |
-| status       | ENUM      | PENDING / PAID / SHIPPED |
-| created_at   | TIMESTAMP | DEFAULT NOW              |
+| Column         | Type            | Constraints                  |
+| -------------- | --------------- | ---------------------------- |
+| id             | BIGINT          | PK                           |
+| vendor_id      | BIGINT          | FK → `vendors(id)`, NOT NULL |
+| category_id    | BIGINT          | FK → `category(id)`, NULL    |
+| name           | VARCHAR         | NOT NULL                     |
+| description    | TEXT            | NULL                         |
+| price          | DECIMAL/NUMERIC | NOT NULL                     |
+| stock_quantity | INT             | NOT NULL                     |
+| added_at       | TIMESTAMP       | NULL                         |
 
----
+#### `product_image`
 
-### Payments Table
+| Column     | Type   | Constraints                   |
+| ---------- | ------ | ----------------------------- |
+| id         | BIGINT | PK                            |
+| product_id | BIGINT | FK → `products(id)`, NOT NULL |
+| image_url  | TEXT   | NOT NULL                      |
 
-| Column         | Type      | Constraints       |
-| -------------- | --------- | ----------------- |
-| id             | UUID      | PK                |
-| order_id       | UUID      | FK → orders(id)   |
-| provider       | VARCHAR   | Stripe / Razorpay |
-| transaction_id | TEXT      |                   |
-| status         | VARCHAR   |                   |
-| created_at     | TIMESTAMP | DEFAULT NOW       |
+#### `cart`
 
----
+| Column  | Type   | Constraints                                 |
+| ------- | ------ | ------------------------------------------- |
+| id      | BIGINT | PK                                          |
+| user_id | BIGINT | FK → `users(id)`, NULL (guest cart allowed) |
 
-## 🔐 Protected APIs
+#### `cartitem`
 
-| Route                | Access             |
-| -------------------- | ------------------ |
-| /api/orders          | Authenticated User |
-| /api/vendor/products | Vendor             |
-| /api/admin/analytics | Admin              |
+| Column     | Type   | Constraints                   |
+| ---------- | ------ | ----------------------------- |
+| id         | BIGINT | PK                            |
+| cart_id    | BIGINT | FK → `cart(id)`, NOT NULL     |
+| product_id | BIGINT | FK → `products(id)`, NOT NULL |
+| quantity   | INT    | NOT NULL                      |
 
-JWT Header:
+#### `address`
 
-```
-Authorization: Bearer <token>
-```
+| Column          | Type           | Constraints                    |
+| --------------- | -------------- | ------------------------------ |
+| id              | BIGINT         | PK                             |
+| user_id         | BIGINT         | FK → `users(id)`, NOT NULL     |
+| label           | VARCHAR (enum) | NULL (`HOME`, `WORK`, `OTHER`) |
+| street          | VARCHAR        | NOT NULL                       |
+| landmark        | VARCHAR        | NULL                           |
+| city            | VARCHAR        | NOT NULL                       |
+| state           | VARCHAR        | NOT NULL                       |
+| country         | VARCHAR        | NOT NULL                       |
+| pincode         | VARCHAR        | NOT NULL                       |
+| phone           | VARCHAR        | NULL                           |
+| alternate_phone | VARCHAR        | NULL                           |
 
----
+#### `orders`
 
-## 🌐 External Integrations
+| Column         | Type            | Constraints                                                             |
+| -------------- | --------------- | ----------------------------------------------------------------------- |
+| id             | BIGINT          | PK                                                                      |
+| user_id        | BIGINT          | FK → `users(id)`, NOT NULL                                              |
+| total          | DECIMAL/NUMERIC | NOT NULL                                                                |
+| status         | VARCHAR (enum)  | NOT NULL (`PENDING`, `PROCESSING`, `SHIPPED`, `DELIVERED`, `CANCELLED`) |
+| payment_status | VARCHAR (enum)  | NOT NULL (`PENDING`, `COMPLETED`, `FAILED`, `REFUNDED`)                 |
+| street         | VARCHAR         | NULL (snapshot at checkout)                                             |
+| landmark       | VARCHAR         | NULL (snapshot at checkout)                                             |
+| city           | VARCHAR         | NULL (snapshot at checkout)                                             |
+| pincode        | VARCHAR         | NULL (snapshot at checkout)                                             |
+| created_at     | TIMESTAMP       | NOT NULL                                                                |
 
-- Payment Gateway: Stripe / Razorpay
-- Email: SMTP (Nodemailer)
-- File Storage: Supabase Storage
-- Analytics APIs
-- Rate Limiting
+#### `orderitems`
 
----
+| Column     | Type            | Constraints                                              |
+| ---------- | --------------- | -------------------------------------------------------- |
+| id         | BIGINT          | PK                                                       |
+| order_id   | BIGINT          | FK → `orders(id)`, NOT NULL                              |
+| product_id | BIGINT          | FK → `products(id)`, NULL (product may be deleted later) |
+| price      | DECIMAL/NUMERIC | NOT NULL (snapshot price)                                |
+| quantity   | INT             | NOT NULL                                                 |
 
-## 🧰 Tech Stack
+#### `payment`
 
-**Backend**
-
-- Node.js
-- Express.js
-
-**Database**
-
-- PostgreSQL (Supabase)
-
-**Authentication**
-
-- JWT
-- bcrypt
-
-**Cloud & Services**
-
-- Supabase
-- Stripe / Razorpay
-- Nodemailer
-
-**Security**
-
-- Helmet
-- Express Rate Limit
-
----
-
-## 🚀 Setup & Installation
-
-```bash
-git clone <repo>
-cd backend
-npm install
-npm run dev
-```
-
-Create `.env`:
-
-```
-DATABASE_URL=
-JWT_SECRET=
-STRIPE_SECRET_KEY=
-SMTP_HOST=
-```
+| Column         | Type            | Constraints                                             |
+| -------------- | --------------- | ------------------------------------------------------- |
+| id             | BIGINT          | PK                                                      |
+| order_id       | BIGINT          | FK → `orders(id)`, NOT NULL                             |
+| amount         | DECIMAL/NUMERIC | NOT NULL                                                |
+| mode           | VARCHAR (enum)  | NOT NULL (`UPI`, `CARD`, `NET_BANKING`, `COD`)          |
+| status         | VARCHAR (enum)  | NOT NULL (`PENDING`, `COMPLETED`, `FAILED`, `REFUNDED`) |
+| transaction_id | VARCHAR         | NULL                                                    |
+| created_at     | TIMESTAMP       | NOT NULL                                                |
 
 ---
 
-## ✅ Final Notes
+### 📌 Indexing (recommended)
 
-This project is designed to reflect **industry-grade backend architecture** with emphasis on scalability, security, and clean code practices. It is suitable for academic evaluation, internships, and real-world backend demonstrations.
+PostgreSQL automatically creates indexes for `PRIMARY KEY` and `UNIQUE` constraints. In addition, these indexes are strongly recommended for query performance:
+
+- Foreign-key lookup indexes:
+  - `vendors(user_id)` (already UNIQUE, so indexed)
+  - `products(vendor_id)`, `products(category_id)`
+  - `product_image(product_id)`
+  - `cart(user_id)`
+  - `cartitem(cart_id)`, `cartitem(product_id)`
+  - `address(user_id)`
+  - `orders(user_id)`
+  - `orderitems(order_id)`, `orderitems(product_id)`
+  - `payment(order_id)`
+
+- Common filter/sort indexes:
+  - `products(name)` (or `GIN`/`GiST` full-text index if you add search)
+  - `products(price)` if you sort/filter by price frequently
+  - `orders(created_at)` for “recent orders” screens
+  - `orders(status)`, `orders(payment_status)` for admin/vendor dashboards
+
+- Uniqueness constraints:
+  - `users(email)` (already UNIQUE)
+  - `vendors(gstin)` (already UNIQUE)
+
+---
+
+### 🧩 Normalization
+
+- The schema is mostly **3NF**: core entities (`users`, `vendors`, `products`, `category`) are separated, and many-to-one relationships are represented via foreign keys.
+- Intentional denormalization exists in `orders` where address fields are stored as a **snapshot** at checkout time. This is a common pattern to preserve historical delivery info even if a user edits/deletes an address later.
+
+---
+
+### 💾 Space Complexity (data + indexes)
+
+Let $U,V,C,P,I,CA,CI,A,O,OI,PA$ be the row counts of the tables above.
+
+- Table storage grows linearly: $O(U+V+C+P+I+CA+CI+A+O+OI+PA)$ rows.
+- Each B-tree index adds additional linear overhead: for an indexed column on a table with $N$ rows, index size is $O(N)$ (plus per-entry overhead). With $k$ indexes on that table, it’s $O(kN)$.
+- Total database size is therefore approximately:
+  - Data: $O(\text{total rows})$
+  - Indexes: $O(\text{total indexed rows across all indexes})$
+
+---
