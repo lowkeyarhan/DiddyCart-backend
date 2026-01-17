@@ -29,9 +29,6 @@ public class User {
     @Column(name = "role", nullable = false)
     private String role; // e.g., "USER", "ADMIN", "VENDOR"
 
-    @Column(name = "is_active", nullable = false)
-    private boolean isActive = true;
-
     @Column(name = "created_at")
     private Instant createdAt = Instant.now();
 
@@ -76,14 +73,6 @@ public class User {
 
     public void setRole(String role) {
         this.role = role;
-    }
-
-    public boolean isActive() {
-        return isActive;
-    }
-
-    public void setActive(boolean isActive) {
-        this.isActive = isActive;
     }
 
     public Instant getCreatedAt() {
