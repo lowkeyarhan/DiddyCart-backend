@@ -45,21 +45,27 @@ springdoc:
     operations-sorter: method
     tags-sorter: alpha
   group-configs:
-    - group: auth
-      display-name: Authentication APIs
+    - group: all
+      display-name: All
+      paths-to-match: /api/**
+    - group: authentication
+      display-name: authentication
       paths-to-match: /api/auth/**
-    - group: products
-      display-name: Product APIs
+    - group: product
+      display-name: product
       paths-to-match: /api/products/**
     - group: cart
-      display-name: Cart APIs
+      display-name: cart
       paths-to-match: /api/cart/**
     - group: orders
-      display-name: Order APIs
+      display-name: orders
       paths-to-match: /api/orders/**
-    - group: payments
-      display-name: Payment APIs
+    - group: payment
+      display-name: payment
       paths-to-match: /api/payments/**
-    - group: addresses
-      display-name: Address APIs
+    - group: vendor
+      display-name: vendor
+      paths-to-match: /api/vendors/**
+    - group: address
+      display-name: address
       paths-to-match: /api/addresses/**
