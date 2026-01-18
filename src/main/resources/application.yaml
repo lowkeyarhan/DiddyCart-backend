@@ -8,9 +8,9 @@ spring:
 
   # Supabase DataSource Configuration
   datasource:
-    url: jdbc:postgresql://aws-1-ap-south-1.pooler.supabase.com:5432/postgres?user=postgres.sihigvbstpqzhvgeknkr&password=T3acedge#2011
-    username: postgres.sihigvbstpqzhvgeknkr
-    password: T3acedge#2011
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
     # HikariCP Settings
@@ -32,7 +32,7 @@ spring:
 
 diddycart:
   app:
-    jwtSecret: SagarKePullKeNicheTeriMaaBhajiaTaleMeraBaapKhaKeChale
+    jwtSecret: ${JWT_SECRET}
     jwtExpirationMs: 86400000
 
 # Swagger/OpenAPI
