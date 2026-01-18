@@ -15,4 +15,7 @@ public interface VendorRepository extends JpaRepository<Vendor, Long> {
 
     // find vendor by user id
     Optional<Vendor> findByUserId(Long id);
+
+    // Check if GSTIN already exists
+    boolean existsByGstin(String gstin);
 }

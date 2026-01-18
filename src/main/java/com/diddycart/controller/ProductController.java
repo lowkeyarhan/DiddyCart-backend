@@ -47,7 +47,7 @@ public class ProductController {
 
     // Vendor/Admin: Add Product
     @PostMapping(consumes = { MediaType.MULTIPART_FORM_DATA_VALUE })
-    @PreAuthorize("hasAnyRole('VENDOR', 'ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_VENDOR', 'ROLE_ADMIN')")
     public ResponseEntity<Product> addProduct(
             @RequestPart("product") @Valid ProductRequest productRequest,
             @RequestPart("image") MultipartFile image,
@@ -62,7 +62,7 @@ public class ProductController {
 
     // Vendor/Admin: Update Product
     @PutMapping(value = "/{id}", consumes = { MediaType.MULTIPART_FORM_DATA_VALUE })
-    @PreAuthorize("hasAnyRole('VENDOR', 'ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_VENDOR', 'ROLE_ADMIN')")
     public ResponseEntity<Product> updateProduct(
             @PathVariable Long id,
             @RequestPart("product") @Valid ProductRequest productRequest,
@@ -77,7 +77,7 @@ public class ProductController {
 
     // Vendor/Admin: Delete Product
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('VENDOR', 'ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_VENDOR', 'ROLE_ADMIN')")
     public ResponseEntity<String> deleteProduct(
             @PathVariable Long id,
             @RequestHeader("Authorization") String token) throws IOException {

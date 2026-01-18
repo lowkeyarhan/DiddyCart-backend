@@ -62,14 +62,14 @@ public class OrderController {
 
     // ADMIN: Get All Orders (with pagination)
     @GetMapping("/admin/all")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     public ResponseEntity<Page<Order>> getAllOrders(Pageable pageable) {
         return ResponseEntity.ok(orderService.getAllOrders(pageable));
     }
 
     // ADMIN: Update Order Status
     @PutMapping("/admin/{id}/status")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     public ResponseEntity<Order> updateOrderStatus(
             @PathVariable Long id,
             @RequestParam OrderStatus status) {

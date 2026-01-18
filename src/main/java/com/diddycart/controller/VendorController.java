@@ -1,0 +1,68 @@
+package com.diddycart.controller;
+
+import com.diddycart.dto.vendor.VendorRegistrationRequest;
+import com.diddycart.dto.vendor.VendorResponse;
+import com.diddycart.service.VendorService;
+import com.diddycart.util.JwtUtil;
+import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/vendor")
+public class VendorController {
+
+    @Autowired
+    private VendorService vendorService;
+
+    @Autowired
+    private JwtUtil jwtUtil;
+
+    // Register as vendor (USER role required)
+    @PostMapping("/register")
+    @PreAuthorize("hasAnyAuthority('ROLE_USER', 'ROLE_ADMIN')")
+    public ResponseEntity<VendorResponse> registerVendor(
+            @RequestBody @Valid VendorRegistrationRequest request,
+            @RequestHeader("Authorization") String token) {
+
+        String jwt = token.substring(7);
+        Long userId = jwtUtil.extractUserId(jwt);
+
+        VendorResponse response = vendorService.registerVendor(userId, request);
+        return ResponseEntity.ok(response);
+    }
+
+    // Get own vendor profile
+    @GetMapping("/profile")
+    @PreAuthorize("hasAnyAuthority('ROLE_VENDOR', 'ROLE_ADMIN')")
+    public ResponseEntity<VendorResponse> getVendorProfile(@RequestHeader("Authorization") String token) {
+        String jwt = token.substring(7);
+        Long userId = jwtUtil.extractUserId(jwt);
+
+        VendorResponse response = vendorService.getVendorByUserId(userId);
+        return ResponseEntity.ok(response);
+    }
+
+    // Update vendor profile
+    @PutMapping("/profile")
+    @PreAuthorize("hasAnyAuthority('ROLE_VENDOR', 'ROLE_ADMIN')")
+    public ResponseEntity<VendorResponse> updateVendorProfile(
+            @RequestBody @Valid VendorRegistrationRequest request,
+            @RequestHeader("Authorization") String token) {
+
+        String jwt = token.substring(7);
+        Long userId = jwtUtil.extractUserId(jwt);
+
+        VendorResponse response = vendorService.updateVendor(userId, request);
+        return ResponseEntity.ok(response);
+    }
+
+    // Get vendor by ID (public)
+    @GetMapping("/{vendorId}")
+    public ResponseEntity<VendorResponse> getVendorById(@PathVariable Long vendorId) {
+        VendorResponse response = vendorService.getVendorById(vendorId);
+        return ResponseEntity.ok(response);
+    }
+}
