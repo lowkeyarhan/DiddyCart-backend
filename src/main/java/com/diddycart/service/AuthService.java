@@ -54,7 +54,7 @@ public class AuthService {
         cartRepository.save(cart);
 
         // Generate JWT token for auto-login
-        String token = jwtUtil.generateToken(savedUser.getId(), savedUser.getEmail(), savedUser.getRole().name());
+        String token = jwtUtil.generateToken(savedUser.getId(), savedUser.getRole().name());
 
         // Return AuthResponse with token
         AuthResponse response = new AuthResponse();
@@ -77,7 +77,7 @@ public class AuthService {
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         // 3. Generate Token
-        String token = jwtUtil.generateToken(user.getId(), user.getEmail(), user.getRole().name());
+        String token = jwtUtil.generateToken(user.getId(), user.getRole().name());
 
         // 4. Return Response
         AuthResponse response = new AuthResponse();

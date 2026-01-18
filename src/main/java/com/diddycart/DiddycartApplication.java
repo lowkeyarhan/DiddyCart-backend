@@ -1,4 +1,4 @@
-package com.diddycart.app;
+package com.diddycart;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

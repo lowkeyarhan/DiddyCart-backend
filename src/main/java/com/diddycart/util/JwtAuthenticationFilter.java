@@ -5,12 +5,9 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -23,49 +20,44 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Autowired
     private JwtUtil jwtUtil;
 
-    @Autowired
-    @Lazy
-    private UserDetailsService userDetailsService;
-
+    // Main filter method
     @Override
     protected void doFilterInternal(HttpServletRequest request,
             HttpServletResponse response,
             FilterChain filterChain)
             throws ServletException, IOException {
 
+        // Get Authorization header
         String authHeader = request.getHeader("Authorization");
 
         String token = null;
-        String username = null;
+        Long userId = null;
 
-        // 1. Check Bearer token
+        // 1. Check for Bearer token and extract userId
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             token = authHeader.substring(7);
             try {
-                username = jwtUtil.extractEmail(token);
+                userId = jwtUtil.extractUserId(token);
             } catch (Exception e) {
                 System.out.println("JWT Extraction Error: " + e.getMessage());
             }
         }
 
-        // 2. If token is valid and no authentication exists yet
-        if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-
-            // Load user from DB
-            UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+        // 2. If token is valid and no authentication exists yet, authenticate
+        if (userId != null && SecurityContextHolder.getContext().getAuthentication() == null) {
 
             // 3. Validate Token
-            if (jwtUtil.validateToken(token, userDetails.getUsername())) {
+            if (jwtUtil.validateToken(token)) {
 
+                // Extract role and create authority
                 String role = jwtUtil.extractRole(token);
-
-                // Fix: Spring Security expects "ROLE_USER", but token has "USER"
                 SimpleGrantedAuthority authority = role.startsWith("ROLE_")
                         ? new SimpleGrantedAuthority(role)
                         : new SimpleGrantedAuthority("ROLE_" + role);
 
+                // Create authentication token with userId as principal
                 UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                        userDetails,
+                        userId,
                         null,
                         List.of(authority));
 
@@ -74,6 +66,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
         }
 
+        // Continue filter chain
         filterChain.doFilter(request, response);
     }
 }

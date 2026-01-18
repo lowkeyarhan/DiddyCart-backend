@@ -21,11 +21,10 @@ public class JwtUtil {
         return Keys.hmacShaKeyFor(secret.getBytes());
     }
 
-    // Generate JWT (Now includes UserId + Role)
-    public String generateToken(Long userId, String email, String role) {
+    // Generate JWT (Only includes UserId + Role)
+    public String generateToken(Long userId, String role) {
         return Jwts.builder()
-                .setSubject(email)
-                .claim("userId", userId) // Custom: Add User ID
+                .setSubject(userId.toString()) // Use userId as subject
                 .claim("role", role) // Custom: Add Role
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + expiration))
@@ -33,9 +32,9 @@ public class JwtUtil {
                 .compact();
     }
 
-    // Extract email from token
-    public String extractEmail(String token) {
-        return extractAllClaims(token).getSubject();
+    // Extract User ID from token
+    public Long extractUserId(String token) {
+        return Long.parseLong(extractAllClaims(token).getSubject());
     }
 
     // Extract role from token
@@ -43,14 +42,9 @@ public class JwtUtil {
         return extractAllClaims(token).get("role", String.class);
     }
 
-    // Extract User ID from token
-    public Long extractUserId(String token) {
-        return extractAllClaims(token).get("userId", Long.class);
-    }
-
     // Validate token
-    public boolean validateToken(String token, String email) {
-        return extractEmail(token).equals(email) && !isTokenExpired(token);
+    public boolean validateToken(String token) {
+        return !isTokenExpired(token);
     }
 
     // Check if token is expired

@@ -1,4 +1,4 @@
-package com.diddycart.app;
+package com.diddycart;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
