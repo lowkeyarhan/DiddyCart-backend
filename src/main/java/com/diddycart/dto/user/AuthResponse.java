@@ -1,6 +1,5 @@
 package com.diddycart.dto.user;
 
-import com.diddycart.enums.UserRole;
 import lombok.Data;
 
 // Data Transfer Object for authentication responses
@@ -10,6 +9,5 @@ import lombok.Data;
 public class AuthResponse {
     private String token; // The JWT Token
     private String name;
-    private UserRole role;
     private Long userId;
 }

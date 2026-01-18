@@ -60,7 +60,6 @@ public class AuthService {
         AuthResponse response = new AuthResponse();
         response.setToken(token);
         response.setName(savedUser.getName());
-        response.setRole(savedUser.getRole());
         response.setUserId(savedUser.getId());
 
         return response;
@@ -83,7 +82,6 @@ public class AuthService {
         AuthResponse response = new AuthResponse();
         response.setToken(token);
         response.setName(user.getName());
-        response.setRole(user.getRole());
         response.setUserId(user.getId());
 
         return response;
