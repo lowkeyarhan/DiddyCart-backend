@@ -35,11 +35,11 @@ public class ProductService {
     private FileService fileService;
 
     // Add Product
-    public Product addProduct(ProductRequest req, MultipartFile image, Long vendorUserId) throws IOException {
+    public ProductResponse addProduct(ProductRequest req, MultipartFile image, Long vendorUserId) throws IOException {
         Category category = categoryRepository.findById(req.getCategoryId())
                 .orElseThrow(() -> new RuntimeException("Category not found"));
 
-        Vendor vendor = vendorRepository.findByUserId(vendorUserId) // Assuming you added findByUserId in Repo
+        Vendor vendor = vendorRepository.findByUserId(vendorUserId)
                 .orElseThrow(() -> new RuntimeException("Vendor profile not found"));
 
         Product product = new Product();
@@ -64,7 +64,8 @@ public class ProductService {
             product.getImages().add(productImage);
         }
 
-        return productRepository.save(product);
+        Product savedProduct = productRepository.save(product);
+        return mapToResponse(savedProduct);
     }
 
     // Get all products (Paginated)
@@ -85,7 +86,7 @@ public class ProductService {
     }
 
     // Update Product
-    public Product updateProduct(Long id, ProductRequest req, MultipartFile image, Long vendorUserId)
+    public ProductResponse updateProduct(Long id, ProductRequest req, MultipartFile image, Long vendorUserId)
             throws IOException {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Product not found with id: " + id));
@@ -130,7 +131,8 @@ public class ProductService {
             product.getImages().add(productImage);
         }
 
-        return productRepository.save(product);
+        Product updatedProduct = productRepository.save(product);
+        return mapToResponse(updatedProduct);
     }
 
     // Delete Product

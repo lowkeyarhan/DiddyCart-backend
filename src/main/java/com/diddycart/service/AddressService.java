@@ -1,6 +1,7 @@
 package com.diddycart.service;
 
-import com.diddycart.dto.address.AddressDTO;
+import com.diddycart.dto.address.AddressRequest;
+import com.diddycart.dto.address.AddressResponse;
 import com.diddycart.models.Address;
 import com.diddycart.models.User;
 import com.diddycart.repository.AddressRepository;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class AddressService {
@@ -21,14 +23,16 @@ public class AddressService {
     private UserRepository userRepository;
 
     // Fetch all addresses for a user
-    public List<Address> getUserAddresses(Long userId) {
+    public List<AddressResponse> getUserAddresses(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
-        return addressRepository.findByUser(user);
+        return addressRepository.findByUser(user).stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
     }
 
     // Fetch address by ID
-    public Address getAddressById(Long addressId, Long userId) {
+    public AddressResponse getAddressById(Long addressId, Long userId) {
         Address address = addressRepository.findById(addressId)
                 .orElseThrow(() -> new RuntimeException("Address not found with id: " + addressId));
 
@@ -37,29 +41,34 @@ public class AddressService {
             throw new RuntimeException("You are not authorized to view this address");
         }
 
-        return address;
+        return mapToResponse(address);
     }
 
     // Create new address
     @Transactional
-    public Address createAddress(Long userId, AddressDTO addressDTO) {
+    public AddressResponse createAddress(Long userId, AddressRequest request) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         Address address = new Address();
         address.setUser(user);
-        address.setLabel(addressDTO.getType());
-        address.setStreet(addressDTO.getStreet());
-        address.setCity(addressDTO.getCity());
-        address.setState(addressDTO.getState());
-        address.setPincode(addressDTO.getPincode());
+        address.setLabel(request.getLabel());
+        address.setStreet(request.getStreet());
+        address.setLandmark(request.getLandmark());
+        address.setCity(request.getCity());
+        address.setState(request.getState());
+        address.setCountry(request.getCountry());
+        address.setPincode(request.getPincode());
+        address.setPhone(request.getPhone());
+        address.setAlternatePhone(request.getAlternatePhone());
 
-        return addressRepository.save(address);
+        Address savedAddress = addressRepository.save(address);
+        return mapToResponse(savedAddress);
     }
 
     // Update existing address
     @Transactional
-    public Address updateAddress(Long addressId, Long userId, AddressDTO addressDTO) {
+    public AddressResponse updateAddress(Long addressId, Long userId, AddressRequest request) {
         Address address = addressRepository.findById(addressId)
                 .orElseThrow(() -> new RuntimeException("Address not found with id: " + addressId));
 
@@ -69,13 +78,18 @@ public class AddressService {
         }
 
         // Update fields
-        address.setLabel(addressDTO.getType());
-        address.setStreet(addressDTO.getStreet());
-        address.setCity(addressDTO.getCity());
-        address.setState(addressDTO.getState());
-        address.setPincode(addressDTO.getPincode());
+        address.setLabel(request.getLabel());
+        address.setStreet(request.getStreet());
+        address.setLandmark(request.getLandmark());
+        address.setCity(request.getCity());
+        address.setState(request.getState());
+        address.setCountry(request.getCountry());
+        address.setPincode(request.getPincode());
+        address.setPhone(request.getPhone());
+        address.setAlternatePhone(request.getAlternatePhone());
 
-        return addressRepository.save(address);
+        Address updatedAddress = addressRepository.save(address);
+        return mapToResponse(updatedAddress);
     }
 
     // Delete address
@@ -90,5 +104,21 @@ public class AddressService {
         }
 
         addressRepository.delete(address);
+    }
+
+    // Helper method to map Address to AddressResponse
+    private AddressResponse mapToResponse(Address address) {
+        AddressResponse response = new AddressResponse();
+        response.setId(address.getId());
+        response.setLabel(address.getLabel());
+        response.setStreet(address.getStreet());
+        response.setLandmark(address.getLandmark());
+        response.setCity(address.getCity());
+        response.setState(address.getState());
+        response.setCountry(address.getCountry());
+        response.setPincode(address.getPincode());
+        response.setPhone(address.getPhone());
+        response.setAlternatePhone(address.getAlternatePhone());
+        return response;
     }
 }

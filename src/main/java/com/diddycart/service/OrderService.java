@@ -1,6 +1,8 @@
 package com.diddycart.service;
 
+import com.diddycart.dto.orders.OrderItemResponse;
 import com.diddycart.dto.orders.OrderRequest;
+import com.diddycart.dto.orders.OrderResponse;
 import com.diddycart.enums.OrderStatus;
 import com.diddycart.enums.PaymentStatus;
 import com.diddycart.models.*;
@@ -16,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class OrderService {
@@ -34,11 +37,11 @@ public class OrderService {
 
     // Place Order
     @Transactional
-    public Order placeOrder(Long userId, OrderRequest req) {
+    public OrderResponse placeOrder(Long userId, OrderRequest req) {
 
         // 1. Get Cart
-        Cart cart = cartService.getCart(userId);
-        if (cart.getItems().isEmpty()) {
+        Cart cart = cartService.getOrCreateCart(userId);
+        if (cart.getItems() == null || cart.getItems().isEmpty()) {
             throw new RuntimeException("Cannot place order: Cart is empty");
         }
 
@@ -90,18 +93,18 @@ public class OrderService {
         Order savedOrder = orderRepository.save(order);
         cartService.clearCart(userId);
 
-        return savedOrder;
+        return mapToResponse(savedOrder);
     }
 
     // Get Orders for User (with pagination)
-    public Page<Order> getUserOrders(Long userId, Pageable pageable) {
+    public Page<OrderResponse> getUserOrders(Long userId, Pageable pageable) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
-        return orderRepository.findByUser(user, pageable);
+        return orderRepository.findByUser(user, pageable).map(this::mapToResponse);
     }
 
     // Get Order by ID
-    public Order getOrderById(Long orderId, Long userId) {
+    public OrderResponse getOrderById(Long orderId, Long userId) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found with id: " + orderId));
 
@@ -110,27 +113,28 @@ public class OrderService {
             throw new RuntimeException("You are not authorized to view this order");
         }
 
-        return order;
+        return mapToResponse(order);
     }
 
     // Get All Orders (Admin only) - with pagination
-    public Page<Order> getAllOrders(Pageable pageable) {
-        return orderRepository.findAll(pageable);
+    public Page<OrderResponse> getAllOrders(Pageable pageable) {
+        return orderRepository.findAll(pageable).map(this::mapToResponse);
     }
 
     // Update Order Status (Admin only)
     @Transactional
-    public Order updateOrderStatus(Long orderId, OrderStatus status) {
+    public OrderResponse updateOrderStatus(Long orderId, OrderStatus status) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found with id: " + orderId));
 
         order.setStatus(status);
-        return orderRepository.save(order);
+        Order savedOrder = orderRepository.save(order);
+        return mapToResponse(savedOrder);
     }
 
     // Cancel Order (User/Admin)
     @Transactional
-    public Order cancelOrder(Long orderId, Long userId) {
+    public OrderResponse cancelOrder(Long orderId, Long userId) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found with id: " + orderId));
 
@@ -152,6 +156,43 @@ public class OrderService {
         }
 
         order.setStatus(OrderStatus.CANCELLED);
-        return orderRepository.save(order);
+        Order savedOrder = orderRepository.save(order);
+        return mapToResponse(savedOrder);
+    }
+
+    // Helper method to map Order to OrderResponse
+    private OrderResponse mapToResponse(Order order) {
+        OrderResponse response = new OrderResponse();
+        response.setOrderId(order.getId());
+        response.setOrderDate(order.getCreatedAt());
+        response.setTotalAmount(order.getTotal());
+        response.setStatus(order.getStatus());
+        response.setPaymentStatus(order.getPaymentStatus());
+
+        // Build shipping address string
+        String shippingAddress = String.join(", ",
+                order.getStreet() != null ? order.getStreet() : "",
+                order.getCity() != null ? order.getCity() : "",
+                order.getState() != null ? order.getState() : "",
+                order.getPincode() != null ? order.getPincode() : ""
+        );
+        response.setShippingAddress(shippingAddress);
+
+        // Map order items
+        List<OrderItemResponse> itemResponses = new ArrayList<>();
+        if (order.getOrderItems() != null) {
+            for (OrderItem item : order.getOrderItems()) {
+                OrderItemResponse itemResponse = new OrderItemResponse();
+                itemResponse.setProductId(item.getProduct().getId());
+                itemResponse.setProductName(item.getProduct().getName());
+                itemResponse.setPrice(item.getPrice());
+                itemResponse.setQuantity(item.getQuantity());
+                itemResponse.setSubTotal(item.getPrice().multiply(BigDecimal.valueOf(item.getQuantity())));
+                itemResponses.add(itemResponse);
+            }
+        }
+        response.setItems(itemResponses);
+
+        return response;
     }
 }

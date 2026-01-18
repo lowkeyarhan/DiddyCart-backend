@@ -2,7 +2,6 @@ package com.diddycart.controller;
 
 import com.diddycart.dto.product.ProductRequest;
 import com.diddycart.dto.product.ProductResponse;
-import com.diddycart.models.Product;
 import com.diddycart.service.ProductService;
 import com.diddycart.util.JwtUtil;
 import jakarta.validation.Valid;
@@ -46,7 +45,7 @@ public class ProductController {
     // Vendor/Admin: Add Product
     @PostMapping
     @PreAuthorize("hasAnyAuthority('ROLE_VENDOR', 'ROLE_ADMIN')")
-    public ResponseEntity<Product> addProduct(
+    public ResponseEntity<ProductResponse> addProduct(
             @RequestBody @Valid ProductRequest productRequest,
             @RequestHeader("Authorization") String token) throws IOException {
 
@@ -60,7 +59,7 @@ public class ProductController {
     // Vendor/Admin: Update Product
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyAuthority('ROLE_VENDOR', 'ROLE_ADMIN')")
-    public ResponseEntity<Product> updateProduct(
+    public ResponseEntity<ProductResponse> updateProduct(
             @PathVariable Long id,
             @RequestBody @Valid ProductRequest productRequest,
             @RequestHeader("Authorization") String token) throws IOException {

@@ -5,8 +5,8 @@ import java.util.List;
 import java.math.BigDecimal;
 
 @Data
-public class CartDTO {
+public class CartResponse {
     private Long cartId;
-    private List<CartItemDTO> items;
-    private BigDecimal totalAmount; // Sum of all items
+    private List<CartItemResponse> items;
+    private BigDecimal totalAmount;
 }

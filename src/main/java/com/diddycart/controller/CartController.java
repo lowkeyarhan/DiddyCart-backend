@@ -1,8 +1,10 @@
 package com.diddycart.controller;
 
-import com.diddycart.models.Cart;
+import com.diddycart.dto.cart.AddToCartRequest;
+import com.diddycart.dto.cart.CartResponse;
 import com.diddycart.service.CartService;
 import com.diddycart.util.JwtUtil;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,21 +21,19 @@ public class CartController {
 
     // Get My Cart
     @GetMapping
-    public ResponseEntity<Cart> getMyCart(@RequestHeader("Authorization") String token) {
+    public ResponseEntity<CartResponse> getMyCart(@RequestHeader("Authorization") String token) {
         Long userId = jwtUtil.extractUserId(token.substring(7));
         return ResponseEntity.ok(cartService.getCart(userId));
     }
 
     // Add Item to Cart
     @PostMapping("/add")
-    public ResponseEntity<String> addToCart(
+    public ResponseEntity<CartResponse> addToCart(
             @RequestHeader("Authorization") String token,
-            @RequestParam Long productId,
-            @RequestParam Integer quantity) {
+            @Valid @RequestBody AddToCartRequest request) {
 
         Long userId = jwtUtil.extractUserId(token.substring(7));
-        cartService.addToCart(userId, productId, quantity);
-        return ResponseEntity.ok("Item added to cart");
+        return ResponseEntity.ok(cartService.addToCart(userId, request.getProductId(), request.getQuantity()));
     }
 
     // Remove Item from Cart

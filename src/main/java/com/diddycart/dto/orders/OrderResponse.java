@@ -8,15 +8,12 @@ import java.time.Instant;
 import java.util.List;
 
 @Data
-public class OrderDTO {
+public class OrderResponse {
     private Long orderId;
     private Instant orderDate;
     private BigDecimal totalAmount;
     private OrderStatus status;
     private PaymentStatus paymentStatus;
-
-    // Address Snapshot
-    private String shippingAddress; // Full address as a single string
-
-    private List<OrderItemDTO> items;
+    private String shippingAddress;
+    private List<OrderItemResponse> items;
 }

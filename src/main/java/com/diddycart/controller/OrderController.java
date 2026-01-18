@@ -1,8 +1,8 @@
 package com.diddycart.controller;
 
 import com.diddycart.dto.orders.OrderRequest;
+import com.diddycart.dto.orders.OrderResponse;
 import com.diddycart.enums.OrderStatus;
-import com.diddycart.models.Order;
 import com.diddycart.service.OrderService;
 import com.diddycart.util.JwtUtil;
 import jakarta.validation.Valid;
@@ -25,7 +25,7 @@ public class OrderController {
 
     // Place Order
     @PostMapping
-    public ResponseEntity<Order> placeOrder(
+    public ResponseEntity<OrderResponse> placeOrder(
             @RequestHeader("Authorization") String token,
             @Valid @RequestBody OrderRequest request) {
 
@@ -35,7 +35,7 @@ public class OrderController {
 
     // Get My Orders (with pagination)
     @GetMapping("/my-orders")
-    public ResponseEntity<Page<Order>> getMyOrders(
+    public ResponseEntity<Page<OrderResponse>> getMyOrders(
             @RequestHeader("Authorization") String token,
             Pageable pageable) {
         Long userId = jwtUtil.extractUserId(token.substring(7));
@@ -44,7 +44,7 @@ public class OrderController {
 
     // Get Order by ID
     @GetMapping("/{id}")
-    public ResponseEntity<Order> getOrderById(
+    public ResponseEntity<OrderResponse> getOrderById(
             @PathVariable Long id,
             @RequestHeader("Authorization") String token) {
         Long userId = jwtUtil.extractUserId(token.substring(7));
@@ -53,7 +53,7 @@ public class OrderController {
 
     // Cancel Order
     @PutMapping("/{id}/cancel")
-    public ResponseEntity<Order> cancelOrder(
+    public ResponseEntity<OrderResponse> cancelOrder(
             @PathVariable Long id,
             @RequestHeader("Authorization") String token) {
         Long userId = jwtUtil.extractUserId(token.substring(7));
@@ -63,14 +63,14 @@ public class OrderController {
     // ADMIN: Get All Orders (with pagination)
     @GetMapping("/admin/all")
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
-    public ResponseEntity<Page<Order>> getAllOrders(Pageable pageable) {
+    public ResponseEntity<Page<OrderResponse>> getAllOrders(Pageable pageable) {
         return ResponseEntity.ok(orderService.getAllOrders(pageable));
     }
 
     // ADMIN: Update Order Status
     @PutMapping("/admin/{id}/status")
     @PreAuthorize("hasAuthority('ROLE_ADMIN')")
-    public ResponseEntity<Order> updateOrderStatus(
+    public ResponseEntity<OrderResponse> updateOrderStatus(
             @PathVariable Long id,
             @RequestParam OrderStatus status) {
         return ResponseEntity.ok(orderService.updateOrderStatus(id, status));
