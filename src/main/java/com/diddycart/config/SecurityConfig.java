@@ -70,6 +70,13 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
+                        // Swagger / OpenAPI
+                        .requestMatchers(
+                                "/swagger-ui/**",
+                                "/swagger-ui.html",
+                                "/api-docs/**",
+                                "/v3/api-docs/**")
+                        .permitAll()
                         .requestMatchers("/api/auth/**").permitAll() // Login/Register
                         .requestMatchers("/api/products/**").permitAll() // Catalog browsing
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")

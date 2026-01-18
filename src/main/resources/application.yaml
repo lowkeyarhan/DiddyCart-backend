@@ -6,12 +6,14 @@ spring:
     compose:
       enabled: false
 
+  # Supabase DataSource Configuration
   datasource:
     url: jdbc:postgresql://aws-1-ap-south-1.pooler.supabase.com:5432/postgres?user=postgres.sihigvbstpqzhvgeknkr&password=T3acedge#2011
     username: postgres.sihigvbstpqzhvgeknkr
     password: T3acedge#2011
     driver-class-name: org.postgresql.Driver
 
+    # HikariCP Settings
     hikari:
       maximum-pool-size: 15
       minimum-idle: 2
@@ -32,3 +34,32 @@ diddycart:
   app:
     jwtSecret: SagarKePullKeNicheTeriMaaBhajiaTaleMeraBaapKhaKeChale
     jwtExpirationMs: 86400000
+
+# Swagger/OpenAPI
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: true
+    operations-sorter: method
+    tags-sorter: alpha
+  group-configs:
+    - group: auth
+      display-name: Authentication APIs
+      paths-to-match: /api/auth/**
+    - group: products
+      display-name: Product APIs
+      paths-to-match: /api/products/**
+    - group: cart
+      display-name: Cart APIs
+      paths-to-match: /api/cart/**
+    - group: orders
+      display-name: Order APIs
+      paths-to-match: /api/orders/**
+    - group: payments
+      display-name: Payment APIs
+      paths-to-match: /api/payments/**
+    - group: addresses
+      display-name: Address APIs
+      paths-to-match: /api/addresses/**
