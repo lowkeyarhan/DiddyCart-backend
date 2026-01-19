@@ -10,6 +10,8 @@ import org.springframework.context.annotation.Primary;
 import org.springframework.data.redis.cache.RedisCacheConfiguration;
 import org.springframework.data.redis.cache.RedisCacheManager;
 import org.springframework.data.redis.connection.RedisConnectionFactory;
+import org.springframework.data.redis.serializer.GenericJackson2JsonRedisSerializer;
+import org.springframework.data.redis.serializer.RedisSerializationContext;
 
 import java.time.Duration;
 import java.util.concurrent.Callable;
@@ -20,10 +22,13 @@ public class CacheConfig {
     @Bean
     @Primary
     public CacheManager cacheManager(RedisConnectionFactory connectionFactory) {
-        // 1. Configure the actual Redis Cache (TTL: 1 hour default)
+        // 1. Configure JSON Serialization
         RedisCacheConfiguration config = RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofHours(1))
-                .disableCachingNullValues();
+                .disableCachingNullValues()
+                // ADD THIS LINE: Use JSON instead of Java ByteStream
+                .serializeValuesWith(RedisSerializationContext.SerializationPair
+                        .fromSerializer(new GenericJackson2JsonRedisSerializer()));
 
         RedisCacheManager redisManager = RedisCacheManager.builder(connectionFactory)
                 .cacheDefaults(config)
