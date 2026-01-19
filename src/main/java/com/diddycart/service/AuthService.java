@@ -3,6 +3,7 @@ package com.diddycart.service;
 import com.diddycart.dto.user.AuthResponse;
 import com.diddycart.dto.user.LoginRequest;
 import com.diddycart.dto.user.RegisterRequest;
+import com.diddycart.dto.user.UserProfileRequest;
 import com.diddycart.dto.user.UserProfileResponse;
 import com.diddycart.enums.UserRole;
 import com.diddycart.models.User;
@@ -11,6 +12,8 @@ import com.diddycart.repository.CartRepository;
 import com.diddycart.repository.UserRepository;
 import com.diddycart.util.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -23,7 +26,7 @@ public class AuthService {
     private UserRepository userRepository;
 
     @Autowired
-    private CartRepository cartRepository; // To create an empty cart on register
+    private CartRepository cartRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -89,6 +92,7 @@ public class AuthService {
     }
 
     // Fetch User Profile (view my profile)
+    @Cacheable(value = "user_profile", key = "#userId")
     public UserProfileResponse getUserProfile(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -99,6 +103,51 @@ public class AuthService {
         response.setEmail(user.getEmail());
         response.setPhone(user.getPhone());
         response.setRole(user.getRole());
+
+        return response;
+    }
+
+    // Update user profile
+    @CachePut(value = "user_profile", key = "#userId")
+    public UserProfileResponse updateUserProfile(Long userId, UserProfileRequest request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // Update name if provided
+        if (request.getName() != null && !request.getName().isBlank()) {
+            user.setName(request.getName());
+        }
+
+        // Update phone if provided
+        if (request.getPhone() != null && !request.getPhone().isBlank()) {
+            user.setPhone(request.getPhone());
+        }
+
+        // Update email if provided (Check for uniqueness)
+        if (request.getEmail() != null && !request.getEmail().isBlank()) {
+            // Only check if email is actually changing
+            if (!request.getEmail().equals(user.getEmail())) {
+                if (userRepository.existsByEmail(request.getEmail())) {
+                    throw new RuntimeException("Email is already in use by another account");
+                }
+                user.setEmail(request.getEmail());
+            }
+        }
+
+        // Update password if provided (Encrypt it)
+        if (request.getPassword() != null && !request.getPassword().isBlank()) {
+            user.setPassword(passwordEncoder.encode(request.getPassword()));
+        }
+
+        // Save and Return
+        User updatedUser = userRepository.save(user);
+
+        UserProfileResponse response = new UserProfileResponse();
+        response.setId(updatedUser.getId());
+        response.setName(updatedUser.getName());
+        response.setEmail(updatedUser.getEmail());
+        response.setPhone(updatedUser.getPhone());
+        response.setRole(updatedUser.getRole());
 
         return response;
     }

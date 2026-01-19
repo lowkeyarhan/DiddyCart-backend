@@ -7,6 +7,10 @@ import com.diddycart.models.User;
 import com.diddycart.repository.AddressRepository;
 import com.diddycart.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +27,7 @@ public class AddressService {
     private UserRepository userRepository;
 
     // Fetch all addresses of a user
+    @Cacheable(value = "user_addresses", key = "#userId")
     public List<AddressResponse> getUserAddresses(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -32,6 +37,9 @@ public class AddressService {
     }
 
     // Fetch address of a user by ID
+    // SECURITY: Include userId in the key so User B cannot fetch User A's cached
+    // address.
+    @Cacheable(value = "address", key = "#userId + '_' + #addressId")
     public AddressResponse getAddressById(Long addressId, Long userId) {
         Address address = addressRepository.findById(addressId)
                 .orElseThrow(() -> new RuntimeException("Address not found with id: " + addressId));
@@ -45,7 +53,11 @@ public class AddressService {
     }
 
     // Create new address
+    // Delete old cache for user's address list and add new address to cache since
+    // the address list was updated
     @Transactional
+    @Caching(evict = { @CacheEvict(value = "user_addresses", key = "#userId") }, put = {
+            @CachePut(value = "address", key = "#userId + '_' + #result.id") })
     public AddressResponse createAddress(Long userId, AddressRequest request) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -67,6 +79,9 @@ public class AddressService {
     }
 
     // Update existing address
+    // Update address cache and evict user's address list cache
+    @Caching(put = { @CachePut(value = "address", key = "#userId + '_' + #addressId") }, evict = {
+            @CacheEvict(value = "user_addresses", key = "#userId") })
     @Transactional
     public AddressResponse updateAddress(Long addressId, Long userId, AddressRequest request) {
         Address address = addressRepository.findById(addressId)
@@ -93,7 +108,12 @@ public class AddressService {
     }
 
     // Delete address
+    // Delete both address cache and user's address list cache
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(value = "address", key = "#userId + '_' + #addressId"),
+            @CacheEvict(value = "user_addresses", key = "#userId")
+    })
     public void deleteAddress(Long addressId, Long userId) {
         Address address = addressRepository.findById(addressId)
                 .orElseThrow(() -> new RuntimeException("Address not found with id: " + addressId));

@@ -1,10 +1,17 @@
 package com.diddycart.dto.address;
 
+import java.io.Serializable;
+
 import com.diddycart.enums.AddressLabel;
 import lombok.Data;
 
+// Data Transfer Object for address responses
+// What the backend sends to the frontend regarding address information.
+
 @Data
-public class AddressResponse {
+public class AddressResponse implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     private Long id;
     private AddressLabel label;
     private String street;

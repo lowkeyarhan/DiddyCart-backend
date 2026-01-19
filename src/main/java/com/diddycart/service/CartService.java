@@ -8,6 +8,9 @@ import com.diddycart.repository.CartRepository;
 import com.diddycart.repository.ProductRepository;
 import com.diddycart.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,7 +34,7 @@ public class CartService {
     @Autowired
     private UserRepository userRepository;
 
-    // Retrieve or Create Cart for User (internal use)
+    // Retrieve or Create Cart
     public Cart getOrCreateCart(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -44,14 +47,16 @@ public class CartService {
                 });
     }
 
-    // Get Cart Response
+    // Get my Cart check cache first
+    @Cacheable(value = "cart", key = "#userId")
     public CartResponse getCart(Long userId) {
         Cart cart = getOrCreateCart(userId);
         return mapToResponse(cart);
     }
 
-    // Add Item to Cart
+    // Add Item to Cart and update cache
     @Transactional
+    @CachePut(value = "cart", key = "#userId")
     public CartResponse addToCart(Long userId, Long productId, Integer quantity) {
         Cart cart = getOrCreateCart(userId);
         Product product = productRepository.findById(productId)
@@ -77,19 +82,32 @@ public class CartService {
             cartItemRepository.save(newItem);
         }
 
-        // Refresh cart and return
+        // Return the fresh state for the cache
         Cart updatedCart = getOrCreateCart(userId);
         return mapToResponse(updatedCart);
     }
 
-    // Remove Item from Cart
+    // Remove Item from Cart and update cache
     @Transactional
-    public void removeFromCart(Long cartItemId) {
-        cartItemRepository.deleteById(cartItemId);
+    @CachePut(value = "cart", key = "#userId")
+    public CartResponse removeFromCart(Long userId, Long cartItemId) {
+        CartItem item = cartItemRepository.findById(cartItemId)
+                .orElseThrow(() -> new RuntimeException("Item not found"));
+
+        // Security Check: Ensure user owns this cart item
+        if (!item.getCart().getUser().getId().equals(userId)) {
+            throw new RuntimeException("You are not authorized to remove this item");
+        }
+
+        cartItemRepository.delete(item);
+
+        // Return updated cart for cache
+        return getCart(userId);
     }
 
-    // Clear Cart
+    // Clear Cart and update cache
     @Transactional
+    @CacheEvict(value = "cart", key = "#userId")
     public void clearCart(Long userId) {
         Cart cart = getOrCreateCart(userId);
         if (cart.getItems() != null) {

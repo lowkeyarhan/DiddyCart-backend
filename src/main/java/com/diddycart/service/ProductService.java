@@ -10,6 +10,9 @@ import com.diddycart.repository.CategoryRepository;
 import com.diddycart.repository.ProductRepository;
 import com.diddycart.repository.VendorRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -73,7 +76,8 @@ public class ProductService {
         return productRepository.findAll(pageable).map(this::mapToResponse);
     }
 
-    // Get Product by ID
+    // Get Product by ID check cache first
+    @Cacheable(value = "products", key = "#id")
     public ProductResponse getProductById(Long id) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Product not found with id: " + id));
@@ -85,7 +89,8 @@ public class ProductService {
         return productRepository.findByNameContainingIgnoreCase(keyword, pageable).map(this::mapToResponse);
     }
 
-    // ADMIN/VENDOR Update Product
+    // ADMIN/VENDOR Update Product and update cache
+    @CachePut(value = "products", key = "#id")
     public ProductResponse updateProduct(Long id, ProductRequest req, MultipartFile image, Long vendorUserId)
             throws IOException {
         Product product = productRepository.findById(id)
@@ -135,7 +140,8 @@ public class ProductService {
         return mapToResponse(updatedProduct);
     }
 
-    // ADMIN/VENDOR Delete Product
+    // ADMIN/VENDOR Delete Product and remove from cache
+    @CacheEvict(value = "products", key = "#id")
     public void deleteProduct(Long id, Long vendorUserId) throws IOException {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Product not found with id: " + id));

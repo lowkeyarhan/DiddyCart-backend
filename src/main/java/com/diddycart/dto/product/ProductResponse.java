@@ -1,6 +1,8 @@
 package com.diddycart.dto.product;
 
 import lombok.Data;
+
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -8,7 +10,10 @@ import java.util.List;
 // What the backend sends to the frontend when product information is requested during view product.
 
 @Data
-public class ProductResponse {
+public class ProductResponse implements Serializable {
+
+    private static final long serialVersionUID = 1L;
+
     private Long id;
     private String name;
     private String description;

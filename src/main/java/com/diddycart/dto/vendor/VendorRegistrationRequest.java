@@ -2,7 +2,12 @@ package com.diddycart.dto.vendor;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
+import lombok.Data;
 
+// Data Transfer Object for vendor registration requests
+// What the frontend sends to the backend when a user wants to register as a vendor.
+
+@Data
 public class VendorRegistrationRequest {
 
     @NotBlank(message = "Store name is required")
@@ -13,28 +18,4 @@ public class VendorRegistrationRequest {
     private String gstin;
 
     private String description;
-
-    public String getStoreName() {
-        return storeName;
-    }
-
-    public void setStoreName(String storeName) {
-        this.storeName = storeName;
-    }
-
-    public String getGstin() {
-        return gstin;
-    }
-
-    public void setGstin(String gstin) {
-        this.gstin = gstin;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
-    }
 }

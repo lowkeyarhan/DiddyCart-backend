@@ -3,6 +3,7 @@ package com.diddycart.controller;
 import com.diddycart.dto.user.AuthResponse;
 import com.diddycart.dto.user.LoginRequest;
 import com.diddycart.dto.user.RegisterRequest;
+import com.diddycart.dto.user.UserProfileRequest;
 import com.diddycart.dto.user.UserProfileResponse;
 import com.diddycart.service.AuthService;
 import com.diddycart.util.JwtUtil;
@@ -40,5 +41,17 @@ public class AuthController {
         String jwt = token.substring(7);
         Long userId = jwtUtil.extractUserId(jwt);
         return ResponseEntity.ok(authService.getUserProfile(userId));
+    }
+
+    // Update My Profile
+    @PutMapping("/profile")
+    public ResponseEntity<UserProfileResponse> updateMyProfile(
+            @RequestHeader("Authorization") String token,
+            @Valid @RequestBody UserProfileRequest request) {
+
+        String jwt = token.substring(7);
+        Long userId = jwtUtil.extractUserId(jwt);
+
+        return ResponseEntity.ok(authService.updateUserProfile(userId, request));
     }
 }

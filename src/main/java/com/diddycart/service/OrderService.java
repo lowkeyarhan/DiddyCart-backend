@@ -10,6 +10,8 @@ import com.diddycart.repository.OrderRepository;
 import com.diddycart.repository.ProductRepository;
 import com.diddycart.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -103,6 +105,7 @@ public class OrderService {
     }
 
     // Get Order by ID
+    @Cacheable(value = "orders", key = "#userId + '_' + #orderId")
     public OrderResponse getOrderById(Long orderId, Long userId) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found with id: " + orderId));
@@ -120,19 +123,23 @@ public class OrderService {
         return orderRepository.findAll(pageable).map(this::mapToResponse);
     }
 
-    // Update Order Status (Admin only)
+    // Update Order Status (Admin and vendor only)
     @Transactional
+    @CachePut(value = "orders", key = "#result.userId + '_' + #result.orderId")
     public OrderResponse updateOrderStatus(Long orderId, OrderStatus status) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found with id: " + orderId));
 
         order.setStatus(status);
         Order savedOrder = orderRepository.save(order);
+
+        // This mapper will now include the userId
         return mapToResponse(savedOrder);
     }
 
     // Cancel Order (User/Admin)
     @Transactional
+    @CachePut(value = "orders", key = "#userId + '_' + #orderId")
     public OrderResponse cancelOrder(Long orderId, Long userId) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found with id: " + orderId));
@@ -163,6 +170,7 @@ public class OrderService {
     private OrderResponse mapToResponse(Order order) {
         OrderResponse response = new OrderResponse();
         response.setOrderId(order.getId());
+        response.setUserId(order.getUser().getId());
         response.setOrderDate(order.getCreatedAt());
         response.setTotalAmount(order.getTotal());
         response.setStatus(order.getStatus());
@@ -173,8 +181,7 @@ public class OrderService {
                 order.getStreet() != null ? order.getStreet() : "",
                 order.getCity() != null ? order.getCity() : "",
                 order.getState() != null ? order.getState() : "",
-                order.getPincode() != null ? order.getPincode() : ""
-        );
+                order.getPincode() != null ? order.getPincode() : "");
         response.setShippingAddress(shippingAddress);
 
         // Map order items

@@ -67,9 +67,9 @@ public class OrderController {
         return ResponseEntity.ok(orderService.getAllOrders(pageable));
     }
 
-    // ADMIN: Update Order Status
+    // ADMIN/VENDOR: Update Order Status
     @PutMapping("/admin/{id}/status")
-    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_VENDOR')")
     public ResponseEntity<OrderResponse> updateOrderStatus(
             @PathVariable Long id,
             @RequestParam OrderStatus status) {

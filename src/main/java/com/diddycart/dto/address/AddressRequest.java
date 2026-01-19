@@ -6,6 +6,9 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import lombok.Data;
 
+// Data Transfer Object for address requests
+// What the frontend sends to the backend when a user wants to add or update an address.
+
 @Data
 public class AddressRequest {
 

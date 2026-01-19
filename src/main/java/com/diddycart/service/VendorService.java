@@ -7,7 +7,13 @@ import com.diddycart.models.User;
 import com.diddycart.models.Vendor;
 import com.diddycart.repository.UserRepository;
 import com.diddycart.repository.VendorRepository;
+import com.diddycart.util.JwtUtil;
+
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,8 +26,13 @@ public class VendorService {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private JwtUtil jwtUtil;
+
     // Register user as vendor
+    // EVICT CACHE: User profile cache needs update after role change
     @Transactional
+    @CacheEvict(value = "user_profile", key = "#userId")
     public VendorResponse registerVendor(Long userId, VendorRegistrationRequest request) {
         // Get user details
         User user = userRepository.findById(userId)
@@ -49,27 +60,39 @@ public class VendorService {
 
         // Update user role to VENDOR
         user.setRole(UserRole.VENDOR);
-        userRepository.save(user);
+        User updatedUser = userRepository.save(user);
 
-        // Return response
-        return mapToResponse(savedVendor);
+        // Generate new JWT token with updated role
+        String newToken = jwtUtil.generateToken(updatedUser.getId(), updatedUser.getRole().name());
+
+        // Return response with new token
+        VendorResponse response = mapToResponse(savedVendor);
+        response.setNewToken(newToken);
+
+        return response;
     }
 
-    // Get vendor profile by user ID
+    // Get vendor profile by user ID checks cache first
+    @Cacheable(value = "vendors_by_user", key = "#userId")
     public VendorResponse getVendorByUserId(Long userId) {
         Vendor vendor = vendorRepository.findByUserId(userId)
                 .orElseThrow(() -> new RuntimeException("Vendor profile not found"));
         return mapToResponse(vendor);
     }
 
-    // Get vendor profile by vendor ID
+    // Get vendor profile by vendor ID checks cache first
+    @Cacheable(value = "vendors", key = "#vendorId")
     public VendorResponse getVendorById(Long vendorId) {
         Vendor vendor = vendorRepository.findById(vendorId)
                 .orElseThrow(() -> new RuntimeException("Vendor not found"));
         return mapToResponse(vendor);
     }
 
-    // Update vendor profile
+    // Update vendor profile and update both caches
+    @Caching(put = {
+            @CachePut(value = "vendors_by_user", key = "#userId"),
+            @CachePut(value = "vendors", key = "#result.id")
+    })
     @Transactional
     public VendorResponse updateVendor(Long userId, VendorRegistrationRequest request) {
         Vendor vendor = vendorRepository.findByUserId(userId)
