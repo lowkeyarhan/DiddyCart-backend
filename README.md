@@ -25,7 +25,7 @@ A scalable, production-ready e-commerce backend built with **Java** and **Spring
 ### Infrastructure & Data
 
 - **PostgreSQL:** Primary relational database (via Supabase).
-- **Redis:** Used for caching/session management (via Docker).
+- **Redis:** High-performance caching layer (via Docker).
 - **Docker:** Containerization support for services.
 
 ### Utilities
@@ -33,6 +33,33 @@ A scalable, production-ready e-commerce backend built with **Java** and **Spring
 - **JWT (jjwt):** Secure token generation and validation.
 - **Lombok:** Boilerplate code reduction.
 - **SpringDoc OpenAPI:** Automated API documentation and Swagger UI.
+
+---
+
+## ⚡ Caching Strategy (New!)
+
+To ensure high performance and low latency, DiddyCart implements a robust caching layer using **Redis**.
+
+### 1. Configuration & Serialization
+
+- **Provider:** Spring Boot Cache Abstraction with Redis.
+- **Serialization:** We use `GenericJackson2JsonRedisSerializer` to store data as human-readable **JSON** instead of Java binary.
+  - _Benefit:_ Prevents `ClassCastException` during DevTools restarts and allows easy debugging via Redis CLI.
+- **Logging:** A custom `LoggingCacheManager` decorator wraps the Redis Cache to log **HIT / MISS / PUT / EVICT** events to the console for real-time monitoring.
+
+### 2. Caching Patterns Used
+
+| Service      | Strategy       | Description                                                                                                                      |
+| :----------- | :------------- | :------------------------------------------------------------------------------------------------------------------------------- |
+| **Products** | `@Cacheable`   | **Read-Heavy:** Product details are cached by ID (`products::101`). Invalidated (`@CacheEvict`) only on Admin updates/deletes.   |
+| **Cart**     | `@CachePut`    | **Write-Heavy:** Cart operations (Add/Remove) return the fresh state, instantly updating the cache (`cart::userId`).             |
+| **Orders**   | Composite Keys | **Security:** Order keys combine UserID + OrderID (`orders::101_500`) to prevent unauthorized cache access.                      |
+| **Profile**  | `@CacheEvict`  | **State Change:** Registering as a Vendor automatically evicts the User Profile cache to reflect the new `ROLE_VENDOR`.          |
+| **Payments** | `@CacheEvict`  | **Side Effect:** Processing a payment invalidates the Order cache so the user immediately sees the status change to `COMPLETED`. |
+
+### 3. Consistency Handling
+
+- **Hibernate Integration:** Manual memory management is implemented in `CartService` to ensure the JPA "First-Level Cache" does not return stale entities after cache updates.
 
 ---
 
@@ -100,18 +127,17 @@ Key tables include:
 
 - JDK 25 (or compatible)
 - PostgreSQL
-- Docker (optional, for Redis)
+- Docker Desktop (Required for Redis)
 
 ### 1. Configure Environment
 
 Set the following environment variables or update `application.yaml`:
 
-```yaml
+````yaml
 DB_URL: jdbc:postgresql://localhost:5432/diddycart
 DB_USERNAME: your_username
 DB_PASSWORD: your_password
 JWT_SECRET: your_secure_secret
-```
 
 ### 2. Run Infrastructure
 
@@ -119,7 +145,7 @@ Start Redis using Docker Compose:
 
 ```bash
 docker-compose up -d
-```
+````
 
 ### 3. Build & Run
 
