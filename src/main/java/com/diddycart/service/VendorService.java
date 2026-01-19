@@ -23,7 +23,7 @@ public class VendorService {
     // Register user as vendor
     @Transactional
     public VendorResponse registerVendor(Long userId, VendorRegistrationRequest request) {
-        // Get user
+        // Get user details
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 

@@ -45,10 +45,11 @@ public class AuthService {
         user.setEmail(request.getEmail());
         user.setPhone(request.getPhone());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
-        user.setRole(UserRole.USER); // Default role
+        user.setRole(UserRole.USER);
 
         User savedUser = userRepository.save(user);
 
+        // Create empty cart for the user
         Cart cart = new Cart();
         cart.setUser(savedUser);
         cartRepository.save(cart);
@@ -71,11 +72,11 @@ public class AuthService {
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
 
-        // 2. Fetch User
+        // 2. Fetch User details by email
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        // 3. Generate Token
+        // 3. Generate JWT token
         String token = jwtUtil.generateToken(user.getId(), user.getRole().name());
 
         // 4. Return Response
@@ -87,7 +88,7 @@ public class AuthService {
         return response;
     }
 
-    // Fetch User Profile
+    // Fetch User Profile (view my profile)
     public UserProfileResponse getUserProfile(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));

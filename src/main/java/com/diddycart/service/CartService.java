@@ -98,7 +98,7 @@ public class CartService {
         }
     }
 
-    // Helper method to map Cart to CartResponse
+    // Cart response mapper function
     private CartResponse mapToResponse(Cart cart) {
         CartResponse response = new CartResponse();
         response.setCartId(cart.getId());

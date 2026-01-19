@@ -34,7 +34,7 @@ public class ProductService {
     @Autowired
     private FileService fileService;
 
-    // Add Product
+    // ADMIN/VENDOR Add a new Product
     public ProductResponse addProduct(ProductRequest req, MultipartFile image, Long vendorUserId) throws IOException {
         Category category = categoryRepository.findById(req.getCategoryId())
                 .orElseThrow(() -> new RuntimeException("Category not found"));
@@ -85,7 +85,7 @@ public class ProductService {
         return productRepository.findByNameContainingIgnoreCase(keyword, pageable).map(this::mapToResponse);
     }
 
-    // Update Product
+    // ADMIN/VENDOR Update Product
     public ProductResponse updateProduct(Long id, ProductRequest req, MultipartFile image, Long vendorUserId)
             throws IOException {
         Product product = productRepository.findById(id)
@@ -135,7 +135,7 @@ public class ProductService {
         return mapToResponse(updatedProduct);
     }
 
-    // Delete Product
+    // ADMIN/VENDOR Delete Product
     public void deleteProduct(Long id, Long vendorUserId) throws IOException {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Product not found with id: " + id));
@@ -159,7 +159,7 @@ public class ProductService {
         productRepository.delete(product);
     }
 
-    // Helper: Map to DTO
+    // Product response mapper function
     private ProductResponse mapToResponse(Product product) {
         ProductResponse res = new ProductResponse();
         res.setId(product.getId());

@@ -22,7 +22,7 @@ public class AddressService {
     @Autowired
     private UserRepository userRepository;
 
-    // Fetch all addresses for a user
+    // Fetch all addresses of a user
     public List<AddressResponse> getUserAddresses(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -31,7 +31,7 @@ public class AddressService {
                 .collect(Collectors.toList());
     }
 
-    // Fetch address by ID
+    // Fetch address of a user by ID
     public AddressResponse getAddressById(Long addressId, Long userId) {
         Address address = addressRepository.findById(addressId)
                 .orElseThrow(() -> new RuntimeException("Address not found with id: " + addressId));

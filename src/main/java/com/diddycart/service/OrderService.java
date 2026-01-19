@@ -77,7 +77,7 @@ public class OrderService {
             orderItem.setOrder(order);
             orderItem.setProduct(product);
             orderItem.setQuantity(cartItem.getQuantity());
-            orderItem.setPrice(product.getPrice()); // Snapshot Price
+            orderItem.setPrice(product.getPrice());
 
             orderItems.add(orderItem);
 

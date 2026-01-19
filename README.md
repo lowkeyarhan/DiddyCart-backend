@@ -1,280 +1,137 @@
 # 🛒 DiddyCart – Online Shopping Backend
 
-A scalable, production-style backend for an **online shopping platform**, built to feel like something that could actually survive real users instead of dying after demo day.
+A scalable, production-ready e-commerce backend built with **Java** and **Spring Boot**. This project features a clean, layered architecture designed to handle real-world shopping scenarios, including role-based authentication, product management, cart operations, order lifecycle management, and payment simulation.
 
-This project focuses on **clean architecture, security, scalability, and real-world backend workflows** using SQL in a cloud environment.
+## 🚀 Project Overview
 
----
-
-## 📌 Project Overview
-
-DiddyCart is a backend system that powers an online shopping application where:
-
-- Users can browse products and place orders
-- Users can manage a cart (add/remove/clear items)
-- Orders are created from the cart with address snapshotting
-- Payments can be processed in-app (currently simulated)
-- Products support images uploaded to the local filesystem
-
-The backend is **API-driven**, **stateless**, and follows **RESTful principles** with proper authentication and authorization.
+- **Type:** RESTful API Backend
+- **Language:** Java 25
+- **Framework:** Spring Boot 4.0.1
+- **Database:** PostgreSQL
+- **Security:** Spring Security with stateless JWT Authentication
+- **Build Tool:** Maven
 
 ---
 
-## ⚙️ Core Features
+## 🛠️ Tech Stack
 
-### 🔐 Authentication & Authorization
+### Core Frameworks
 
-- User registration & login (service layer implemented)
-- Password hashing using BCrypt
-- JWT-based, stateless authentication (custom `JwtAuthenticationFilter`)
-- Role-based access control via Spring Security roles (`USER`, `VENDOR`, `ADMIN`)
-- Public routes: `/api/auth/**`, `/api/products/**` (per `SecurityConfig`)
+- **Spring Boot Web:** REST API development.
+- **Spring Data JPA:** ORM and database interactions using Hibernate.
+- **Spring Security:** Authentication and Authorization.
+- **Jakarta Validation:** Bean validation for request inputs.
 
----
+### Infrastructure & Data
 
-### 🏪 Vendor Management
+- **PostgreSQL:** Primary relational database (via Supabase).
+- **Redis:** Used for caching/session management (via Docker).
+- **Docker:** Containerization support for services.
 
-- Products are linked to a `Vendor`.
-- Product creation in `ProductService.addProduct(...)` expects a `vendorUserId` and looks up the vendor profile.
-- API/controller layer for vendor onboarding and vendor-only product management is not present in this repo yet.
+### Utilities
 
----
-
-### 📦 Product Management
-
-- Product creation (service layer) with optional image upload
-- Product listing with pagination (`Pageable`)
-- Name search with pagination
-- Stock quantity stored on `Product` and used for cart/order validation
+- **JWT (jjwt):** Secure token generation and validation.
+- **Lombok:** Boilerplate code reduction.
+- **SpringDoc OpenAPI:** Automated API documentation and Swagger UI.
 
 ---
 
-### 🛒 Cart, Orders & Payments
+## 🏗️ System Architecture
 
-- Cart lifecycle: get/create cart, add items, remove items, clear cart
-- Order placement from cart (deducts stock, snapshots price + shipping address)
-- Order status + payment status enums are present and used
-- Payment processing is currently simulated (generates a UUID transaction id and marks payment `COMPLETED`)
+The project follows a standard **Controller-Service-Repository** layered architecture:
 
----
-
-### ☁️ File Uploads
-
-- Product image uploads are stored locally under `./uploads/` (relative to project working directory)
-- Database stores a relative URL like `/uploads/<filename>`
+1.  **Controller Layer (`/controller`):** Handles HTTP requests, validation, and responses.
+2.  **Service Layer (`/service`):** Contains business logic (e.g., cart calculations, stock validation, payment processing).
+3.  **Repository Layer (`/repository`):** Data access interfaces extending `JpaRepository`.
+4.  **Security (`/config`, `/util`):** Custom `JwtAuthenticationFilter` intercepts requests to validate tokens.
 
 ---
 
-### 🛡️ Security
+## ✨ Key Features
 
-- Spring Security + JWT filter + stateless sessions
-- `ADMIN`-only route namespace reserved at `/api/admin/**` (authorization is configured)
+### 🔐 Authentication & Security
 
----
+- **User Registration & Login:** Supports auto-login upon registration.
+- **JWT Auth:** Stateless authentication using Bearer tokens.
+- **RBAC (Role-Based Access Control):**
+  - `USER`: Browse, shop, and manage orders.
+  - `VENDOR`: Manage own store and products.
+  - `ADMIN`: Full system oversight.
 
-## 🧠 Application Flow
+### 🛍️ Product & Vendor Management
 
-### 1) User Authentication
+- **Catalog:** Pagination and search functionality for products.
+- **Vendor Onboarding:** Users can register as vendors with GSTIN and Store Name.
+- **Inventory Control:** Prevents ordering out-of-stock items.
+- **Image Handling:** Supports product image uploads to local storage.
 
-1. Client calls register/login
-2. Passwords are stored hashed (BCrypt)
-3. JWT is generated and returned in the auth response
-4. Client sends `Authorization: Bearer <token>` for protected routes
+### 🛒 Cart & Orders
 
-### 2) Product Browsing
+- **Persistent Cart:** Cart data is stored in the database.
+- **Order Snapshotting:** Saves price and address at the moment of purchase to preserve history.
+- **Order Lifecycle:** Tracks status from `PENDING` to `DELIVERED`.
 
-1. Public product endpoints are allowed by security config (`/api/products/**`)
-2. Product listing/search use pagination (`Pageable`)
-3. Responses include category + vendor store name + image URLs (when present)
+### 💳 Payments
 
-### 3) Cart → Order
-
-1. User adds products to cart (stock is validated)
-2. User places an order with shipping address fields
-3. Service deducts stock, snapshots price/address, saves order items, and clears the cart
-
-### 4) Payment
-
-1. User processes payment for an order with a selected mode (e.g. `CARD`, `UPI`)
-2. Payment is recorded and order payment status is marked `COMPLETED`
-
-> Current limitation: `OrderService.getUserOrders(...)` is stubbed and returns all orders.
+- **Processing:** Simulates payments via UPI, Card, or Net Banking.
+- **Transaction Records:** Generates unique transaction IDs upon completion.
 
 ---
 
-## 🗄️ Database Schema (PostgreSQL)
+## 🗄️ Database Schema
 
-This project uses Spring Data JPA entities (see `src/main/java/com/diddycart/models`) and is designed for PostgreSQL. Check out at https://drawsql.app/teams/arhan-das/diagrams/diddycart
+The application uses a normalized PostgreSQL schema (approx. 3NF).  
+Check out the detailed schema at [DrawSQl](https://drawsql.app/teams/arhan-das/diagrams/diddycart)
 
-### ✅ Tables (as implemented by entities)
+Key tables include:
 
-> Note: IDs are `BIGINT` (`@GeneratedValue(strategy = IDENTITY)`) in the current codebase.
-
-#### `users`
-
-| Column     | Type           | Constraints                          |
-| ---------- | -------------- | ------------------------------------ |
-| id         | BIGINT         | PK                                   |
-| name       | VARCHAR        | NOT NULL                             |
-| email      | VARCHAR        | NOT NULL, UNIQUE                     |
-| phone      | VARCHAR        | NULL                                 |
-| password   | VARCHAR/TEXT   | NOT NULL (hashed)                    |
-| role       | VARCHAR (enum) | NOT NULL (`USER`, `ADMIN`, `VENDOR`) |
-| created_at | TIMESTAMP      | NOT NULL                             |
-| updated_at | TIMESTAMP      | NULL                                 |
-
-#### `vendors`
-
-| Column      | Type    | Constraints                              |
-| ----------- | ------- | ---------------------------------------- |
-| id          | BIGINT  | PK                                       |
-| user_id     | BIGINT  | FK → `users(id)`, NOT NULL, UNIQUE (1:1) |
-| store_name  | VARCHAR | NOT NULL                                 |
-| gstin       | VARCHAR | NOT NULL, UNIQUE                         |
-| description | TEXT    | NULL                                     |
-
-#### `category`
-
-| Column      | Type    | Constraints |
-| ----------- | ------- | ----------- |
-| id          | BIGINT  | PK          |
-| type        | VARCHAR | NOT NULL    |
-| description | TEXT    | NULL        |
-
-#### `products`
-
-| Column         | Type            | Constraints                  |
-| -------------- | --------------- | ---------------------------- |
-| id             | BIGINT          | PK                           |
-| vendor_id      | BIGINT          | FK → `vendors(id)`, NOT NULL |
-| category_id    | BIGINT          | FK → `category(id)`, NULL    |
-| name           | VARCHAR         | NOT NULL                     |
-| description    | TEXT            | NULL                         |
-| price          | DECIMAL/NUMERIC | NOT NULL                     |
-| stock_quantity | INT             | NOT NULL                     |
-| added_at       | TIMESTAMP       | NULL                         |
-
-#### `product_image`
-
-| Column     | Type   | Constraints                   |
-| ---------- | ------ | ----------------------------- |
-| id         | BIGINT | PK                            |
-| product_id | BIGINT | FK → `products(id)`, NOT NULL |
-| image_url  | TEXT   | NOT NULL                      |
-
-#### `cart`
-
-| Column  | Type   | Constraints                                 |
-| ------- | ------ | ------------------------------------------- |
-| id      | BIGINT | PK                                          |
-| user_id | BIGINT | FK → `users(id)`, NULL (guest cart allowed) |
-
-#### `cartitem`
-
-| Column     | Type   | Constraints                   |
-| ---------- | ------ | ----------------------------- |
-| id         | BIGINT | PK                            |
-| cart_id    | BIGINT | FK → `cart(id)`, NOT NULL     |
-| product_id | BIGINT | FK → `products(id)`, NOT NULL |
-| quantity   | INT    | NOT NULL                      |
-
-#### `address`
-
-| Column          | Type           | Constraints                    |
-| --------------- | -------------- | ------------------------------ |
-| id              | BIGINT         | PK                             |
-| user_id         | BIGINT         | FK → `users(id)`, NOT NULL     |
-| label           | VARCHAR (enum) | NULL (`HOME`, `WORK`, `OTHER`) |
-| street          | VARCHAR        | NOT NULL                       |
-| landmark        | VARCHAR        | NULL                           |
-| city            | VARCHAR        | NOT NULL                       |
-| state           | VARCHAR        | NOT NULL                       |
-| country         | VARCHAR        | NOT NULL                       |
-| pincode         | VARCHAR        | NOT NULL                       |
-| phone           | VARCHAR        | NULL                           |
-| alternate_phone | VARCHAR        | NULL                           |
-
-#### `orders`
-
-| Column         | Type            | Constraints                                                             |
-| -------------- | --------------- | ----------------------------------------------------------------------- |
-| id             | BIGINT          | PK                                                                      |
-| user_id        | BIGINT          | FK → `users(id)`, NOT NULL                                              |
-| total          | DECIMAL/NUMERIC | NOT NULL                                                                |
-| status         | VARCHAR (enum)  | NOT NULL (`PENDING`, `PROCESSING`, `SHIPPED`, `DELIVERED`, `CANCELLED`) |
-| payment_status | VARCHAR (enum)  | NOT NULL (`PENDING`, `COMPLETED`, `FAILED`, `REFUNDED`)                 |
-| street         | VARCHAR         | NULL (snapshot at checkout)                                             |
-| landmark       | VARCHAR         | NULL (snapshot at checkout)                                             |
-| city           | VARCHAR         | NULL (snapshot at checkout)                                             |
-| pincode        | VARCHAR         | NULL (snapshot at checkout)                                             |
-| created_at     | TIMESTAMP       | NOT NULL                                                                |
-
-#### `orderitems`
-
-| Column     | Type            | Constraints                                              |
-| ---------- | --------------- | -------------------------------------------------------- |
-| id         | BIGINT          | PK                                                       |
-| order_id   | BIGINT          | FK → `orders(id)`, NOT NULL                              |
-| product_id | BIGINT          | FK → `products(id)`, NULL (product may be deleted later) |
-| price      | DECIMAL/NUMERIC | NOT NULL (snapshot price)                                |
-| quantity   | INT             | NOT NULL                                                 |
-
-#### `payment`
-
-| Column         | Type            | Constraints                                             |
-| -------------- | --------------- | ------------------------------------------------------- |
-| id             | BIGINT          | PK                                                      |
-| order_id       | BIGINT          | FK → `orders(id)`, NOT NULL                             |
-| amount         | DECIMAL/NUMERIC | NOT NULL                                                |
-| mode           | VARCHAR (enum)  | NOT NULL (`UPI`, `CARD`, `NET_BANKING`, `COD`)          |
-| status         | VARCHAR (enum)  | NOT NULL (`PENDING`, `COMPLETED`, `FAILED`, `REFUNDED`) |
-| transaction_id | VARCHAR         | NULL                                                    |
-| created_at     | TIMESTAMP       | NOT NULL                                                |
+- **Users:** Stores credentials and roles.
+- **Vendors:** 1-to-1 relationship with Users.
+- **Products:** Linked to Vendors and Categories.
+- **Cart/CartItems:** Manages user shopping sessions.
+- **Orders/OrderItems:** Stores purchase history with snapshot data.
+- **Address:** User address book.
 
 ---
 
-### 📌 Indexing (recommended)
+## ⚙️ Setup & Installation
 
-PostgreSQL automatically creates indexes for `PRIMARY KEY` and `UNIQUE` constraints. In addition, these indexes are strongly recommended for query performance:
+### Prerequisites
 
-- Foreign-key lookup indexes:
-  - `vendors(user_id)` (already UNIQUE, so indexed)
-  - `products(vendor_id)`, `products(category_id)`
-  - `product_image(product_id)`
-  - `cart(user_id)`
-  - `cartitem(cart_id)`, `cartitem(product_id)`
-  - `address(user_id)`
-  - `orders(user_id)`
-  - `orderitems(order_id)`, `orderitems(product_id)`
-  - `payment(order_id)`
+- JDK 25 (or compatible)
+- PostgreSQL
+- Docker (optional, for Redis)
 
-- Common filter/sort indexes:
-  - `products(name)` (or `GIN`/`GiST` full-text index if you add search)
-  - `products(price)` if you sort/filter by price frequently
-  - `orders(created_at)` for “recent orders” screens
-  - `orders(status)`, `orders(payment_status)` for admin/vendor dashboards
+### 1. Configure Environment
 
-- Uniqueness constraints:
-  - `users(email)` (already UNIQUE)
-  - `vendors(gstin)` (already UNIQUE)
+Set the following environment variables or update `application.yaml`:
 
----
+```yaml
+DB_URL: jdbc:postgresql://localhost:5432/diddycart
+DB_USERNAME: your_username
+DB_PASSWORD: your_password
+JWT_SECRET: your_secure_secret
+```
 
-### 🧩 Normalization
+### 2. Run Infrastructure
 
-- The schema is mostly **3NF**: core entities (`users`, `vendors`, `products`, `category`) are separated, and many-to-one relationships are represented via foreign keys.
-- Intentional denormalization exists in `orders` where address fields are stored as a **snapshot** at checkout time. This is a common pattern to preserve historical delivery info even if a user edits/deletes an address later.
+Start Redis using Docker Compose:
 
----
+```bash
+docker-compose up -d
+```
 
-### 💾 Space Complexity (data + indexes)
+### 3. Build & Run
 
-Let $U,V,C,P,I,CA,CI,A,O,OI,PA$ be the row counts of the tables above.
+Use the Maven Wrapper to build and start the application:
 
-- Table storage grows linearly: $O(U+V+C+P+I+CA+CI+A+O+OI+PA)$ rows.
-- Each B-tree index adds additional linear overhead: for an indexed column on a table with $N$ rows, index size is $O(N)$ (plus per-entry overhead). With $k$ indexes on that table, it’s $O(kN)$.
-- Total database size is therefore approximately:
-  - Data: $O(\text{total rows})$
-  - Indexes: $O(\text{total indexed rows across all indexes})$
+```bash
+./mvnw clean install
+./mvnw spring-boot:run
+```
 
----
+### 4. Access API Documentation
+
+Once running, explore the API via Swagger UI:
+
+- URL: [http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)
