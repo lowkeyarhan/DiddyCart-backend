@@ -1,5 +1,7 @@
 package com.diddycart.service;
 
+import com.diddycart.dto.vendor.VendorProfileResponse;
+import com.diddycart.dto.vendor.VendorRegisterResponse;
 import com.diddycart.dto.vendor.VendorRegistrationRequest;
 import com.diddycart.dto.vendor.VendorResponse;
 import com.diddycart.enums.UserRole;
@@ -33,7 +35,7 @@ public class VendorService {
     // EVICT CACHE: User profile cache needs update after role change
     @Transactional
     @CacheEvict(value = "user_profile", key = "#userId")
-    public VendorResponse registerVendor(Long userId, VendorRegistrationRequest request) {
+    public VendorRegisterResponse registerVendor(Long userId, VendorRegistrationRequest request) {
         // Get user details
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
@@ -66,21 +68,24 @@ public class VendorService {
         String newToken = jwtUtil.generateToken(updatedUser.getId(), updatedUser.getRole().name());
 
         // Return response with new token
-        VendorResponse response = mapToResponse(savedVendor);
+        VendorRegisterResponse response = mapToRegisterResponse(savedVendor);
         response.setNewToken(newToken);
 
         return response;
     }
 
     // Get vendor profile by user ID checks cache first
+    // Sents the vendor profile data without user details
     @Cacheable(value = "vendors_by_user", key = "#userId")
-    public VendorResponse getVendorByUserId(Long userId) {
+    public VendorProfileResponse getVendorByUserId(Long userId) {
         Vendor vendor = vendorRepository.findByUserId(userId)
                 .orElseThrow(() -> new RuntimeException("Vendor profile not found"));
-        return mapToResponse(vendor);
+
+        return mapToProfileData(vendor); // Use new mapper
     }
 
     // Get vendor profile by vendor ID checks cache first
+    // Sents the full vendor details including user info
     @Cacheable(value = "vendors", key = "#vendorId")
     public VendorResponse getVendorById(Long vendorId) {
         Vendor vendor = vendorRepository.findById(vendorId)
@@ -112,9 +117,32 @@ public class VendorService {
         return mapToResponse(updatedVendor);
     }
 
-    // Helper method to map Vendor to VendorResponse
+    // Helper method to map to VendorResponse DTO
     private VendorResponse mapToResponse(Vendor vendor) {
         VendorResponse response = new VendorResponse();
+        response.setId(vendor.getId());
+        response.setUserId(vendor.getUser().getId());
+        response.setStoreName(vendor.getStoreName());
+        response.setGstin(vendor.getGstin());
+        response.setDescription(vendor.getDescription());
+        response.setUserEmail(vendor.getUser().getEmail());
+        response.setUserName(vendor.getUser().getName());
+        return response;
+    }
+
+    // Helper method to map Vendor to VendorProfileResponse
+    private VendorProfileResponse mapToProfileData(Vendor vendor) {
+        VendorProfileResponse data = new VendorProfileResponse();
+        data.setId(vendor.getId());
+        data.setStoreName(vendor.getStoreName());
+        data.setGstin(vendor.getGstin());
+        data.setDescription(vendor.getDescription());
+        return data;
+    }
+
+    // Helper method to map Vendor to VendorRegisterResponse
+    private VendorRegisterResponse mapToRegisterResponse(Vendor vendor) {
+        VendorRegisterResponse response = new VendorRegisterResponse();
         response.setId(vendor.getId());
         response.setUserId(vendor.getUser().getId());
         response.setStoreName(vendor.getStoreName());

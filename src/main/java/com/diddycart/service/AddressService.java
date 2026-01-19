@@ -2,6 +2,7 @@ package com.diddycart.service;
 
 import com.diddycart.dto.address.AddressRequest;
 import com.diddycart.dto.address.AddressResponse;
+import com.diddycart.dto.address.AddressSummaryResponse;
 import com.diddycart.models.Address;
 import com.diddycart.models.User;
 import com.diddycart.repository.AddressRepository;
@@ -28,11 +29,12 @@ public class AddressService {
 
     // Fetch all addresses of a user
     @Cacheable(value = "user_addresses", key = "#userId")
-    public List<AddressResponse> getUserAddresses(Long userId) {
+    public List<AddressSummaryResponse> getUserAddresses(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
+
         return addressRepository.findByUser(user).stream()
-                .map(this::mapToResponse)
+                .map(this::mapToSummaryResponse)
                 .collect(Collectors.toList());
     }
 
@@ -124,6 +126,19 @@ public class AddressService {
         }
 
         addressRepository.delete(address);
+    }
+
+    // Mapper to convert Address to AddressSummaryResponse used in see all addresses
+    // list
+    private AddressSummaryResponse mapToSummaryResponse(Address address) {
+        AddressSummaryResponse response = new AddressSummaryResponse();
+        response.setId(address.getId());
+        response.setLabel(address.getLabel());
+        response.setCity(address.getCity());
+        response.setState(address.getState());
+        response.setCountry(address.getCountry());
+        response.setPincode(address.getPincode());
+        return response;
     }
 
     // Helper method to map Address to AddressResponse

@@ -2,6 +2,7 @@ package com.diddycart.controller;
 
 import com.diddycart.dto.address.AddressRequest;
 import com.diddycart.dto.address.AddressResponse;
+import com.diddycart.dto.address.AddressSummaryResponse;
 import com.diddycart.service.AddressService;
 import com.diddycart.util.JwtUtil;
 import jakarta.validation.Valid;
@@ -23,7 +24,7 @@ public class AddressController {
 
     // Get all my addresses
     @GetMapping
-    public ResponseEntity<List<AddressResponse>> getMyAddresses(@RequestHeader("Authorization") String token) {
+    public ResponseEntity<List<AddressSummaryResponse>> getMyAddresses(@RequestHeader("Authorization") String token) {
         Long userId = jwtUtil.extractUserId(token.substring(7));
         return ResponseEntity.ok(addressService.getUserAddresses(userId));
     }

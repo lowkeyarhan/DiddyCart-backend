@@ -1,5 +1,7 @@
 package com.diddycart.controller;
 
+import com.diddycart.dto.vendor.VendorProfileResponse;
+import com.diddycart.dto.vendor.VendorRegisterResponse;
 import com.diddycart.dto.vendor.VendorRegistrationRequest;
 import com.diddycart.dto.vendor.VendorResponse;
 import com.diddycart.service.VendorService;
@@ -23,25 +25,24 @@ public class VendorController {
     // Register as vendor (USER role required)
     @PostMapping("/register")
     @PreAuthorize("hasAnyAuthority('ROLE_USER', 'ROLE_ADMIN')")
-    public ResponseEntity<VendorResponse> registerVendor(
+    public ResponseEntity<VendorRegisterResponse> registerVendor(
             @RequestBody @Valid VendorRegistrationRequest request,
             @RequestHeader("Authorization") String token) {
 
         String jwt = token.substring(7);
         Long userId = jwtUtil.extractUserId(jwt);
 
-        VendorResponse response = vendorService.registerVendor(userId, request);
+        VendorRegisterResponse response = vendorService.registerVendor(userId, request);
         return ResponseEntity.ok(response);
     }
 
-    // Get own vendor profile
+    // Get own vendor profile (Restricted View)
     @GetMapping("/profile")
     @PreAuthorize("hasAnyAuthority('ROLE_VENDOR', 'ROLE_ADMIN')")
-    public ResponseEntity<VendorResponse> getVendorProfile(@RequestHeader("Authorization") String token) {
+    public ResponseEntity<VendorProfileResponse> getVendorProfile(@RequestHeader("Authorization") String token) {
         String jwt = token.substring(7);
         Long userId = jwtUtil.extractUserId(jwt);
-
-        VendorResponse response = vendorService.getVendorByUserId(userId);
+        VendorProfileResponse response = vendorService.getVendorByUserId(userId);
         return ResponseEntity.ok(response);
     }
 

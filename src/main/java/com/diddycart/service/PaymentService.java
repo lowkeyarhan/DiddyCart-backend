@@ -27,7 +27,7 @@ public class PaymentService {
     // Process Payment for an Order and Update Order Payment Status
     // EVICT CACHE: Order cache needs update after payment
     @Transactional
-    @CacheEvict(value = "orders", key = "#result.order.user.id + '_' + #orderId")
+    @CacheEvict(value = "orders", key = "#result.userId + '_' + #orderId")
     public PaymentResponse processPayment(Long orderId, PaymentMode mode) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found"));

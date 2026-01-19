@@ -6,6 +6,7 @@ import com.diddycart.dto.orders.OrderResponse;
 import com.diddycart.enums.OrderStatus;
 import com.diddycart.enums.PaymentStatus;
 import com.diddycart.models.*;
+import com.diddycart.repository.AddressRepository;
 import com.diddycart.repository.OrderRepository;
 import com.diddycart.repository.ProductRepository;
 import com.diddycart.repository.UserRepository;
@@ -36,45 +37,55 @@ public class OrderService {
     @Autowired
     private UserRepository userRepository;
 
-    // Place Order
+    @Autowired
+    private AddressRepository addressRepository;
+
     @Transactional
     public OrderResponse placeOrder(Long userId, OrderRequest req) {
 
-        // 1. Get Cart
+        // 1. Get Cart (Existing code)
         Cart cart = cartService.getOrCreateCart(userId);
         if (cart.getItems() == null || cart.getItems().isEmpty()) {
             throw new RuntimeException("Cannot place order: Cart is empty");
         }
 
-        // 2. Create Order
+        // 2. Fetch & Validate Address (NEW LOGIC)
+        Address address = addressRepository.findById(req.getAddressId())
+                .orElseThrow(() -> new RuntimeException("Address not found"));
+
+        // Security Check: Ensure the address belongs to the logged-in user!
+        if (!address.getUser().getId().equals(userId)) {
+            throw new RuntimeException("Access Denied: You cannot use this address");
+        }
+
+        // 3. Create Order
         Order order = new Order();
         order.setUser(cart.getUser());
         order.setStatus(OrderStatus.PENDING);
         order.setPaymentStatus(PaymentStatus.PENDING);
 
-        // 3. Snapshot Address (Copying from Request so history doesn't change)
-        order.setStreet(req.getStreet());
-        order.setCity(req.getCity());
-        order.setState(req.getState());
-        order.setPincode(req.getPincode());
+        // 4. Snapshot Address (Copy from Address Entity -> Order Entity)
+        // We copy the data so if the user changes their address later,
+        // this specific order record remains unchanged.
+        order.setStreet(address.getStreet());
+        order.setCity(address.getCity());
+        order.setState(address.getState());
+        order.setPincode(address.getPincode());
+        order.setLandmark(address.getLandmark());
 
-        // 4. Process Items & Deduct Stock
+        // 5. Process Items & Deduct Stock
         BigDecimal totalAmount = BigDecimal.ZERO;
         List<OrderItem> orderItems = new ArrayList<>();
 
         for (CartItem cartItem : cart.getItems()) {
             Product product = cartItem.getProduct();
-
-            // Check Stock
             if (product.getStockQuantity() < cartItem.getQuantity()) {
                 throw new RuntimeException("Out of stock: " + product.getName());
             }
 
-            // Deduct Stock
             product.setStockQuantity(product.getStockQuantity() - cartItem.getQuantity());
             productRepository.save(product);
 
-            // Create Order Item
             OrderItem orderItem = new OrderItem();
             orderItem.setOrder(order);
             orderItem.setProduct(product);
@@ -90,7 +101,7 @@ public class OrderService {
         order.setOrderItems(orderItems);
         order.setTotal(totalAmount);
 
-        // 5. Save Order & Clear Cart
+        // 6. Save & Clear (Existing code)
         Order savedOrder = orderRepository.save(order);
         cartService.clearCart(userId);
 
@@ -189,12 +200,19 @@ public class OrderService {
         if (order.getOrderItems() != null) {
             for (OrderItem item : order.getOrderItems()) {
                 OrderItemResponse itemResponse = new OrderItemResponse();
-                itemResponse.setProductId(item.getProduct().getId());
-                itemResponse.setProductName(item.getProduct().getName());
-                itemResponse.setPrice(item.getPrice());
-                itemResponse.setQuantity(item.getQuantity());
-                itemResponse.setSubTotal(item.getPrice().multiply(BigDecimal.valueOf(item.getQuantity())));
-                itemResponses.add(itemResponse);
+                // Check if product still exists
+                if (item.getProduct() != null) {
+                    itemResponse.setProductId(item.getProduct().getId());
+                    itemResponse.setProductName(item.getProduct().getName());
+                    if (item.getProduct().getImages() != null && !item.getProduct().getImages().isEmpty()) {
+
+                    }
+                } else {
+                    // Handle deleted products gracefully
+                    itemResponse.setProductId(null);
+                    itemResponse.setProductName("Product no longer available");
+                }
+                // --- FIX ENDS HERE ---
             }
         }
         response.setItems(itemResponses);

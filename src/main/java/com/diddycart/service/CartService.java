@@ -66,9 +66,14 @@ public class CartService {
             throw new RuntimeException("Not enough stock available");
         }
 
-        Optional<CartItem> existing = cart.getItems() != null ? cart.getItems().stream()
+        // Initialize list if null (Important!)
+        if (cart.getItems() == null) {
+            cart.setItems(new ArrayList<>());
+        }
+
+        Optional<CartItem> existing = cart.getItems().stream()
                 .filter(item -> item.getProduct().getId().equals(productId))
-                .findFirst() : Optional.empty();
+                .findFirst();
 
         if (existing.isPresent()) {
             CartItem item = existing.get();
@@ -79,12 +84,13 @@ public class CartService {
             newItem.setCart(cart);
             newItem.setProduct(product);
             newItem.setQuantity(quantity);
+
             cartItemRepository.save(newItem);
+            cart.getItems().add(newItem);
         }
 
-        // Return the fresh state for the cache
-        Cart updatedCart = getOrCreateCart(userId);
-        return mapToResponse(updatedCart);
+        // Now 'cart' has the new item in its list
+        return mapToResponse(cart);
     }
 
     // Remove Item from Cart and update cache
@@ -102,7 +108,6 @@ public class CartService {
         if (item.getCart().getItems() != null) {
             item.getCart().getItems().remove(item);
         }
-        // --- FIX END ---
 
         cartItemRepository.delete(item);
 
