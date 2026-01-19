@@ -94,14 +94,18 @@ public class CartService {
         CartItem item = cartItemRepository.findById(cartItemId)
                 .orElseThrow(() -> new RuntimeException("Item not found"));
 
-        // Security Check: Ensure user owns this cart item
+        // Security Check
         if (!item.getCart().getUser().getId().equals(userId)) {
             throw new RuntimeException("You are not authorized to remove this item");
         }
 
+        if (item.getCart().getItems() != null) {
+            item.getCart().getItems().remove(item);
+        }
+        // --- FIX END ---
+
         cartItemRepository.delete(item);
 
-        // Return updated cart for cache
         return getCart(userId);
     }
 
