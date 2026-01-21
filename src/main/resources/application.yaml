@@ -2,9 +2,11 @@ spring:
   application:
     name: Diddycart
 
-  docker:
-    compose:
-      enabled: false
+  # Redis Configuration
+  data:
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST:localhost}
+      port: ${SPRING_DATA_REDIS_PORT:6379}
 
   # Supabase DataSource Configuration
   datasource:
