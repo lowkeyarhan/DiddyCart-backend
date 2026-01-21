@@ -24,19 +24,19 @@ public class ProductController {
     @Autowired
     private JwtUtil jwtUtil;
 
-    // Public: Get All Products (Paginated)
+    // Get All Products (Paginated)
     @GetMapping
     public ResponseEntity<Page<ProductResponse>> getAllProducts(Pageable pageable) {
         return ResponseEntity.ok(productService.getAllProducts(pageable));
     }
 
-    // Public: Get Product by ID
+    // Get Product by ID
     @GetMapping("/{id}")
     public ResponseEntity<ProductResponse> getProductById(@PathVariable Long id) {
         return ResponseEntity.ok(productService.getProductById(id));
     }
 
-    // Public: Search Products
+    // Search Products
     @GetMapping("/search")
     public ResponseEntity<Page<ProductResponse>> searchProducts(@RequestParam String keyword, Pageable pageable) {
         return ResponseEntity.ok(productService.searchProducts(keyword, pageable));
@@ -49,7 +49,7 @@ public class ProductController {
             @RequestBody @Valid ProductRequest productRequest,
             @RequestHeader("Authorization") String token) throws IOException {
 
-        // Extract Vendor ID from token
+        // Extract Vendor's userID from token
         String jwt = token.substring(7);
         Long vendorId = jwtUtil.extractUserId(jwt);
 

@@ -22,11 +22,11 @@ public class CacheConfig {
     @Bean
     @Primary
     public CacheManager cacheManager(RedisConnectionFactory connectionFactory) {
-        // 1. Configure JSON Serialization
+        // Configure JSON Serialization
         RedisCacheConfiguration config = RedisCacheConfiguration.defaultCacheConfig()
                 .entryTtl(Duration.ofHours(1))
                 .disableCachingNullValues()
-                // ADD THIS LINE: Use JSON instead of Java ByteStream
+                // Use JSON instead of Java ByteStream
                 .serializeValuesWith(RedisSerializationContext.SerializationPair
                         .fromSerializer(new GenericJackson2JsonRedisSerializer()));
 
@@ -34,7 +34,7 @@ public class CacheConfig {
                 .cacheDefaults(config)
                 .build();
 
-        // 2. Wrap it with our Logging Decorator
+        // Wrap it with our Logging Decorator
         return new LoggingCacheManager(redisManager);
     }
 
@@ -95,9 +95,6 @@ public class CacheConfig {
 
         @Override
         public <T> T get(Object key, Callable<T> valueLoader) {
-            // This method is tricky because it handles the "get or load" logic atomically.
-            // We can't easily distinguish hit/miss without complex logic,
-            // so we log the operation itself.
             log.debug("🔍 CACHE LOAD | Cache: {} | Key: {}", getName(), key);
             return delegate.get(key, valueLoader);
         }

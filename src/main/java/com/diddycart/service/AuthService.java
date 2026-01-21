@@ -71,18 +71,18 @@ public class AuthService {
 
     // User Login
     public AuthResponse login(LoginRequest request) {
-        // 1. Authenticate
+        // Authenticate
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
 
-        // 2. Fetch User details by email
+        // Fetch User details by email
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        // 3. Generate JWT token
+        // Generate JWT token
         String token = jwtUtil.generateToken(user.getId(), user.getRole().name());
 
-        // 4. Return Response
+        // Return Response
         AuthResponse response = new AuthResponse();
         response.setToken(token);
         response.setName(user.getName());
@@ -134,7 +134,7 @@ public class AuthService {
             }
         }
 
-        // Update password if provided (Encrypt it)
+        // Update password if provided
         if (request.getPassword() != null && !request.getPassword().isBlank()) {
             user.setPassword(passwordEncoder.encode(request.getPassword()));
         }

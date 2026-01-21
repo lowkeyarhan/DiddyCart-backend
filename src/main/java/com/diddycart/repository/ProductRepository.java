@@ -11,16 +11,13 @@ import org.springframework.stereotype.Repository;
 @Repository
 public interface ProductRepository extends JpaRepository<Product, Long> {
 
-        // 1. Search by product name
+        // Search product by product name
         Page<Product> findByNameContainingIgnoreCase(String keyword, Pageable pageable);
 
-        // 2. Find by Category
+        // Find by product Category
         Page<Product> findByCategoryId(Long categoryId, Pageable pageable);
 
-        // 3. Find by Vendor
-        Page<Product> findByVendorId(Long vendorId, Pageable pageable);
-
-        // 4. Search + Filter by Price Range
+        // Search + Filter by Price Range
         @Query("SELECT p FROM Product p WHERE " +
                         "LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%')) " +
                         "AND p.price BETWEEN :minPrice AND :maxPrice")

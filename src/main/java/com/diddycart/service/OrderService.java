@@ -40,16 +40,17 @@ public class OrderService {
     @Autowired
     private AddressRepository addressRepository;
 
+    // Place an Order
     @Transactional
     public OrderResponse placeOrder(Long userId, OrderRequest req) {
 
-        // 1. Get Cart (Existing code)
+        // Get Cart of the user (Existing code)
         Cart cart = cartService.getOrCreateCart(userId);
         if (cart.getItems() == null || cart.getItems().isEmpty()) {
             throw new RuntimeException("Cannot place order: Cart is empty");
         }
 
-        // 2. Fetch & Validate Address (NEW LOGIC)
+        // Fetch & Validate Address
         Address address = addressRepository.findById(req.getAddressId())
                 .orElseThrow(() -> new RuntimeException("Address not found"));
 
@@ -58,22 +59,20 @@ public class OrderService {
             throw new RuntimeException("Access Denied: You cannot use this address");
         }
 
-        // 3. Create Order
+        // Create Order
         Order order = new Order();
         order.setUser(cart.getUser());
         order.setStatus(OrderStatus.PENDING);
         order.setPaymentStatus(PaymentStatus.PENDING);
 
-        // 4. Snapshot Address (Copy from Address Entity -> Order Entity)
-        // We copy the data so if the user changes their address later,
-        // this specific order record remains unchanged.
+        // Snapshot Address (Copy from Address Entity -> Order Entity)
         order.setStreet(address.getStreet());
         order.setCity(address.getCity());
         order.setState(address.getState());
         order.setPincode(address.getPincode());
         order.setLandmark(address.getLandmark());
 
-        // 5. Process Items & Deduct Stock
+        // Process Items & Deduct Stock
         BigDecimal totalAmount = BigDecimal.ZERO;
         List<OrderItem> orderItems = new ArrayList<>();
 
@@ -101,7 +100,7 @@ public class OrderService {
         order.setOrderItems(orderItems);
         order.setTotal(totalAmount);
 
-        // 6. Save & Clear (Existing code)
+        // Save & Clear (Existing code)
         Order savedOrder = orderRepository.save(order);
         cartService.clearCart(userId);
 
@@ -208,11 +207,9 @@ public class OrderService {
 
                     }
                 } else {
-                    // Handle deleted products gracefully
                     itemResponse.setProductId(null);
                     itemResponse.setProductName("Product no longer available");
                 }
-                // --- FIX ENDS HERE ---
             }
         }
         response.setItems(itemResponses);

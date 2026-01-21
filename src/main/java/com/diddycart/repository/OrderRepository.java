@@ -16,19 +16,19 @@ import java.util.List;
 @Repository
 public interface OrderRepository extends JpaRepository<Order, Long> {
 
-    // 1. USER ORDERS: Fetch all orders for a specific user (with pagination)
+    // USER ORDERS: Fetch all orders for a specific user (with pagination)
     Page<Order> findByUser(User user, Pageable pageable);
 
-    // 1b. USER ORDERS: Fetch all orders for a specific user (without pagination)
+    // USER ORDERS: Fetch all orders for a specific user (without pagination)
     List<Order> findByUser(User user);
 
-    // 2. ADMIN ANALYTICS: Calculate total revenue from completed orders
+    // ADMIN ANALYTICS: Calculate total revenue from completed orders
     @Query("SELECT SUM(o.total) FROM Order o WHERE o.paymentStatus = :paymentStatus")
     Double calculateTotalRevenue(PaymentStatus paymentStatus);
 
-    // 3. ADMIN ANALYTICS: Count orders by status
+    // ADMIN ANALYTICS: Count orders by status
     Long countByStatus(OrderStatus status);
 
-    // 4. ADMIN ANALYTICS: Find orders placed after a specific date
+    // ADMIN ANALYTICS: Find orders placed after a specific date
     List<Order> findByCreatedAtAfter(Instant date);
 }

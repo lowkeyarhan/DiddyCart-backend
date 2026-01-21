@@ -33,7 +33,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String token = null;
         Long userId = null;
 
-        // 1. Check for Bearer token and extract userId
+        // Check for Bearer token and extract userId
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             token = authHeader.substring(7);
             try {
@@ -43,10 +43,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
         }
 
-        // 2. If token is valid and no authentication exists yet, authenticate
+        // If token is valid and no authentication exists yet, authenticate
         if (userId != null && SecurityContextHolder.getContext().getAuthentication() == null) {
 
-            // 3. Validate Token
+            // Validate Token
             if (jwtUtil.validateToken(token)) {
 
                 // Extract role and create authority
@@ -61,7 +61,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         null,
                         List.of(authority));
 
-                // 4. Set the Authentication Context
+                // Set the Authentication Context
                 SecurityContextHolder.getContext().setAuthentication(authToken);
             }
         }

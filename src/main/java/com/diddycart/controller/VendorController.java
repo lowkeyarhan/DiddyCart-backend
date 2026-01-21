@@ -22,7 +22,7 @@ public class VendorController {
     @Autowired
     private JwtUtil jwtUtil;
 
-    // Register as vendor (USER role required)
+    // Register a user as vendor (USER role required)
     @PostMapping("/register")
     @PreAuthorize("hasAnyAuthority('ROLE_USER', 'ROLE_ADMIN')")
     public ResponseEntity<VendorRegisterResponse> registerVendor(
@@ -60,7 +60,7 @@ public class VendorController {
         return ResponseEntity.ok(response);
     }
 
-    // Get vendor by ID (public)
+    // Get vendor complete details by ID (public)
     @GetMapping("/{vendorId}")
     public ResponseEntity<VendorResponse> getVendorById(@PathVariable Long vendorId) {
         VendorResponse response = vendorService.getVendorById(vendorId);
