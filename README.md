@@ -307,12 +307,13 @@ OpenAPI JSON:
 
 ---
 
-## 🗺️ Database Schema
+## 🗺️ System Architecture & Database
 
-The project includes a normalized schema under `database/schema.sql` and a visual ERD:
+Comprehensive architecture documentation:
 
-- DrawSQL: https://drawsql.app/teams/arhan-das/diagrams/diddycart
-- Local ERD: [docs/er-diagram.md](docs/er-diagram.md)
+- **System Architecture Diagram**: [docs/architecture-diagram.md](docs/architecture-diagram.md)
+- **Data Flow Diagram**: [docs/er-diagram.md](docs/er-diagram.md)
+- **Database ERD**: https://drawsql.app/teams/arhan-das/diagrams/diddycart
 
 ---
 
