@@ -165,6 +165,14 @@ public class ProductService {
         productRepository.delete(product);
     }
 
+    // Restore stock when payment fails
+    public void restoreStock(Long productId, Integer quantity) {
+        Product product = productRepository.findById(productId)
+                .orElseThrow(() -> new RuntimeException("Product not found with id: " + productId));
+        product.setStockQuantity(product.getStockQuantity() + quantity);
+        productRepository.save(product);
+    }
+
     // Product response mapper function
     private ProductResponse mapToResponse(Product product) {
         ProductResponse res = new ProductResponse();

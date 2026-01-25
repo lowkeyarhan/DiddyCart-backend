@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DiddyCart Payment</title>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        padding: 20px;
+      }
+      .container {
+        background: white;
+        padding: 48px 40px;
+        border-radius: 16px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        width: 100%;
+        max-width: 440px;
+      }
+      .logo {
+        text-align: center;
+        margin-bottom: 32px;
+      }
+      h1 {
+        font-size: 28px;
+        font-weight: 700;
+        color: #1a1a1a;
+        margin-bottom: 8px;
+      }
+      .subtitle {
+        color: #666;
+        font-size: 14px;
+        margin-bottom: 32px;
+      }
+      .input-group {
+        margin-bottom: 24px;
+      }
+      label {
+        display: block;
+        font-size: 14px;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 8px;
+      }
+      input {
+        width: 100%;
+        padding: 14px 16px;
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+        font-size: 15px;
+        transition: all 0.2s ease;
+        background: #fafafa;
+      }
+      input:focus {
+        outline: none;
+        border-color: #667eea;
+        background: white;
+      }
+      input::placeholder {
+        color: #999;
+      }
+      button {
+        width: 100%;
+        background: #000;
+        color: white;
+        border: none;
+        padding: 16px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: 600;
+        transition: all 0.2s ease;
+        margin-top: 8px;
+      }
+      button:hover {
+        background: #333;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      }
+      button:active {
+        transform: translateY(0);
+      }
+      .divider {
+        text-align: center;
+        margin: 24px 0;
+        color: #999;
+        font-size: 13px;
+      }
+      .info {
+        background: #f5f5f5;
+        padding: 12px 16px;
+        border-radius: 8px;
+        font-size: 13px;
+        color: #666;
+        margin-top: 24px;
+        line-height: 1.5;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="logo">
+        <h1>DiddyCart</h1>
+        <p class="subtitle">Secure checkout</p>
+      </div>
+
+      <div class="input-group">
+        <label for="jwtToken">JWT Token</label>
+        <input
+          type="text"
+          id="jwtToken"
+          placeholder="Paste your JWT token here"
+        />
+      </div>
+
+      <div class="input-group">
+        <label for="orderId">Order ID</label>
+        <input type="number" id="orderId" placeholder="Enter your order ID" />
+      </div>
+
+      <button onclick="startPayment()">Continue to Payment</button>
+
+      <div class="info">
+        🔒 Your payment information is secure and encrypted
+      </div>
+    </div>
+
+    <script>
+      async function startPayment() {
+        const orderId = document.getElementById("orderId").value;
+        const token = document.getElementById("jwtToken").value;
+
+        if (!orderId) return alert("Please enter an Order ID");
+        if (!token) return alert("Please enter a JWT token");
+
+        // Store token in localStorage for later use on success page
+        localStorage.setItem("jwtToken", token);
+
+        try {
+          // 1. Create Order on Backend
+          const response = await fetch(`/api/payments/init/${orderId}`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              ...(token && { Authorization: `Bearer ${token}` }),
+            },
+          });
+
+          if (!response.ok) {
+            // Try to get error details from response body
+            let errorMessage = `Error: ${response.status} - ${response.statusText}`;
+            try {
+              const errorData = await response.json();
+              errorMessage += `\n\nDetails: ${JSON.stringify(errorData, null, 2)}`;
+            } catch (e) {
+              const errorText = await response.text();
+              if (errorText) errorMessage += `\n\n${errorText}`;
+            }
+
+            if (response.status === 403) {
+              errorMessage =
+                "Authentication required. Please provide a valid JWT token.";
+            } else if (response.status === 404) {
+              errorMessage = `Order ID ${orderId} not found. Please check the Order ID.`;
+            } else if (response.status === 400) {
+              errorMessage = `Bad Request: ${errorMessage}\n\nPlease ensure:\n- The Order ID is valid\n- The order exists in the system\n- The JWT token is correct`;
+            }
+
+            return alert(errorMessage);
+          }
+
+          const data = await response.json();
+
+          // 2. Open Razorpay with Callback URL
+          var options = {
+            key: "rzp_test_S87ooZlpOS4CkJ", // REPLACE THIS
+            amount: data.amount * 100,
+            currency: "INR",
+            name: "DiddyCart",
+            description: "Order #" + orderId,
+            order_id: data.transactionId, // Razorpay Order ID from backend
+
+            // THIS IS THE MAGIC LINE YOU WANTED:
+            callback_url: "http://localhost:8080/api/payments/callback",
+
+            prefill: {
+              name: "DiddyCart User",
+              email: "user@diddycart.com",
+              contact: "9999999999",
+            },
+            theme: { color: "#3399cc" },
+          };
+
+          var rzp1 = new Razorpay(options);
+          rzp1.open();
+        } catch (error) {
+          alert(
+            `Network Error: ${error.message}\n\nPlease check:\n- Your internet connection\n- The server is running\n- The API endpoint is correct`,
+          );
+          console.error("Payment error:", error);
+        }
+      }
+    </script>
+  </body>
+</html>

@@ -2,6 +2,11 @@ spring:
   application:
     name: Diddycart
 
+  # Disable Docker Compose Support
+  docker:
+    compose:
+      enabled: false
+
   # Redis Configuration
   data:
     redis:
@@ -37,6 +42,12 @@ diddycart:
     jwtSecret: ${JWT_SECRET}
     jwtExpirationMs: 86400000
 
+# Razorpay Configuration
+razorpay:
+  key:
+    id: ${key_id}
+    secret: ${key_secret}
+
 # Swagger/OpenAPI
 springdoc:
   api-docs:
@@ -49,7 +60,7 @@ springdoc:
   group-configs:
     - group: all
       display-name: All
-      paths-to-match: /api/**
+      paths-to-match: /**
     - group: authentication
       display-name: authentication
       paths-to-match: /api/auth/**
@@ -71,3 +82,6 @@ springdoc:
     - group: address
       display-name: address
       paths-to-match: /api/addresses/**
+    - group: views
+      display-name: views
+      paths-to-match: /checkout, /payment-success, /payment-failure

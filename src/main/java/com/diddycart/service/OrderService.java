@@ -15,10 +15,13 @@ import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -112,6 +115,37 @@ public class OrderService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         return orderRepository.findByUser(user, pageable).map(this::mapToResponse);
+    }
+
+    // --- ADD THIS METHOD ---
+    @Scheduled(fixedRate = 600000) // Runs every 10 minutes
+    @Transactional
+    public void cancelUnpaidOrders() {
+        // Threshold: Orders older than 15 minutes
+        Instant timeoutThreshold = Instant.now().minus(15, ChronoUnit.MINUTES);
+
+        // You need to ensure this method exists in your OrderRepository (see Step 3)
+        List<Order> expiredOrders = orderRepository.findByStatusAndCreatedAtBefore(OrderStatus.PENDING,
+                timeoutThreshold);
+
+        for (Order order : expiredOrders) {
+            System.out.println("Auto-cancelling expired order: " + order.getId());
+
+            // Reuse your existing cancel logic to restore stock!
+            // Note: Your cancelOrder takes (orderId, userId).
+            // Since this is a system action, we can just copy the logic or refactor.
+            // Here is the direct logic for safety:
+
+            for (OrderItem item : order.getOrderItems()) {
+                Product product = item.getProduct();
+                product.setStockQuantity(product.getStockQuantity() + item.getQuantity());
+                productRepository.save(product);
+            }
+
+            order.setStatus(OrderStatus.CANCELLED);
+            order.setPaymentStatus(PaymentStatus.FAILED); // Explicitly mark as failed
+            orderRepository.save(order);
+        }
     }
 
     // Get Order by ID

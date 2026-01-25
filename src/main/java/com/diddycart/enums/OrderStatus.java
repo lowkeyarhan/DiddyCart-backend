@@ -2,7 +2,7 @@ package com.diddycart.enums;
 
 public enum OrderStatus {
     PENDING,
-    PROCESSING,
+    CONFIRMED,
     SHIPPED,
     DELIVERED,
     CANCELLED

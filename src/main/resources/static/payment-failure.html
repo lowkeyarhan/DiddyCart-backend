@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Payment Failed - DiddyCart</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, sans-serif;
+        background: #f5f5f5;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        padding: 20px;
+      }
+      .container {
+        max-width: 500px;
+        width: 100%;
+      }
+      .failure-card {
+        background: white;
+        border-radius: 12px;
+        padding: 48px 32px;
+        text-align: center;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+      .error-icon {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: #dc3545;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 24px;
+        animation: scaleIn 0.3s ease;
+      }
+      @keyframes scaleIn {
+        from {
+          transform: scale(0);
+        }
+        to {
+          transform: scale(1);
+        }
+      }
+      .error-icon svg {
+        width: 40px;
+        height: 40px;
+        stroke: white;
+        stroke-width: 3;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        fill: none;
+      }
+      h1 {
+        font-size: 24px;
+        font-weight: 700;
+        color: #1a1a1a;
+        margin-bottom: 12px;
+      }
+      .subtitle {
+        color: #666;
+        font-size: 15px;
+        margin-bottom: 32px;
+        line-height: 1.6;
+      }
+      .error-details {
+        background: #fff3cd;
+        border-left: 4px solid #ffc107;
+        padding: 16px;
+        border-radius: 8px;
+        margin-bottom: 32px;
+        text-align: left;
+      }
+      .error-title {
+        font-weight: 600;
+        color: #856404;
+        margin-bottom: 8px;
+        font-size: 14px;
+      }
+      .error-message {
+        color: #856404;
+        font-size: 13px;
+        line-height: 1.5;
+      }
+      .reasons-list {
+        background: #f9f9f9;
+        padding: 20px;
+        border-radius: 8px;
+        text-align: left;
+        margin-bottom: 32px;
+      }
+      .reasons-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 12px;
+      }
+      .reasons-list ul {
+        margin-left: 20px;
+        color: #666;
+        font-size: 14px;
+        line-height: 1.8;
+      }
+      .reasons-list li {
+        margin-bottom: 8px;
+      }
+      .button-group {
+        display: flex;
+        gap: 12px;
+        flex-direction: column;
+      }
+      .btn {
+        display: block;
+        text-decoration: none;
+        padding: 14px 32px;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 14px;
+        transition: all 0.2s ease;
+        text-align: center;
+      }
+      .btn-primary {
+        background: #000;
+        color: white;
+      }
+      .btn-primary:hover {
+        background: #333;
+        transform: translateY(-1px);
+      }
+      .btn-secondary {
+        background: white;
+        color: #000;
+        border: 2px solid #e0e0e0;
+      }
+      .btn-secondary:hover {
+        border-color: #000;
+      }
+      .support-info {
+        margin-top: 24px;
+        padding-top: 24px;
+        border-top: 1px solid #f0f0f0;
+        font-size: 13px;
+        color: #666;
+        line-height: 1.6;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="failure-card">
+        <div class="error-icon">
+          <svg viewBox="0 0 52 52">
+            <line x1="16" y1="16" x2="36" y2="36" />
+            <line x1="36" y1="16" x2="16" y2="36" />
+          </svg>
+        </div>
+
+        <h1>Payment Failed</h1>
+        <p class="subtitle">
+          We couldn't process your payment. Don't worry, no money was deducted
+          from your account.
+        </p>
+
+        <div class="error-details">
+          <div class="error-title">What happened?</div>
+          <div class="error-message" id="errorMessage">
+            The payment verification failed or was declined by your payment
+            provider.
+          </div>
+        </div>
+
+        <div class="reasons-list">
+          <div class="reasons-title">Common reasons for payment failure:</div>
+          <ul>
+            <li>Insufficient funds in your account</li>
+            <li>Incorrect card details or CVV</li>
+            <li>Card expired or blocked</li>
+            <li>Payment limit exceeded</li>
+            <li>Network connectivity issues</li>
+            <li>Bank declined the transaction</li>
+          </ul>
+        </div>
+
+        <div class="button-group">
+          <a href="/checkout" class="btn btn-primary">Try Again</a>
+          <a href="/" class="btn btn-secondary">Return to Home</a>
+        </div>
+
+        <div class="support-info">
+          Need help? Contact our support team at
+          <strong>support@diddycart.com</strong> or call
+          <strong>1800-123-4567</strong>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Get error details from URL params
+      const urlParams = new URLSearchParams(window.location.search);
+      const error = urlParams.get("error");
+      const reason = urlParams.get("reason");
+
+      if (error || reason) {
+        const errorMsg = document.getElementById("errorMessage");
+        errorMsg.textContent = reason || error || errorMsg.textContent;
+      }
+    </script>
+  </body>
+</html>

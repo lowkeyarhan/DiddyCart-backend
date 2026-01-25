@@ -31,4 +31,8 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
 
     // ADMIN ANALYTICS: Find orders placed after a specific date
     List<Order> findByCreatedAtAfter(Instant date);
+
+    // Scheduled Task: Find orders with specific status created before a certain
+    // timestamp
+    List<Order> findByStatusAndCreatedAtBefore(OrderStatus status, Instant timestamp);
 }

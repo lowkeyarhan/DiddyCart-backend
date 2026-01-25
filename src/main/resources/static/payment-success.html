@@ -1,0 +1,435 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Payment Successful - DiddyCart</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, sans-serif;
+        background: #f5f5f5;
+        padding: 20px;
+        min-height: 100vh;
+      }
+      .container {
+        max-width: 600px;
+        margin: 0 auto;
+      }
+      .success-card {
+        background: white;
+        border-radius: 12px;
+        padding: 32px;
+        text-align: center;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        margin-bottom: 16px;
+      }
+      .checkmark {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: #05a357;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 20px;
+        animation: scaleIn 0.3s ease;
+      }
+      @keyframes scaleIn {
+        from {
+          transform: scale(0);
+        }
+        to {
+          transform: scale(1);
+        }
+      }
+      .checkmark svg {
+        width: 40px;
+        height: 40px;
+        stroke: white;
+        stroke-width: 3;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        fill: none;
+        stroke-dasharray: 50;
+        stroke-dashoffset: 50;
+        animation: checkmark 0.5s 0.2s ease forwards;
+      }
+      @keyframes checkmark {
+        to {
+          stroke-dashoffset: 0;
+        }
+      }
+      h1 {
+        font-size: 24px;
+        font-weight: 700;
+        color: #1a1a1a;
+        margin-bottom: 8px;
+      }
+      .subtitle {
+        color: #666;
+        font-size: 14px;
+        margin-bottom: 24px;
+      }
+      .info-card {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        margin-bottom: 16px;
+      }
+      .section-title {
+        font-size: 14px;
+        font-weight: 600;
+        color: #666;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 16px;
+      }
+      .detail-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 12px 0;
+        border-bottom: 1px solid #f0f0f0;
+      }
+      .detail-row:last-child {
+        border-bottom: none;
+      }
+      .detail-label {
+        color: #666;
+        font-size: 14px;
+      }
+      .detail-value {
+        color: #1a1a1a;
+        font-size: 14px;
+        font-weight: 500;
+        text-align: right;
+      }
+      .total-row {
+        background: #f9f9f9;
+        padding: 16px;
+        border-radius: 8px;
+        margin-top: 12px;
+      }
+      .total-row .detail-label {
+        font-weight: 600;
+        color: #1a1a1a;
+        font-size: 16px;
+      }
+      .total-row .detail-value {
+        font-size: 18px;
+        color: #05a357;
+      }
+      .address-block {
+        background: #f9f9f9;
+        padding: 16px;
+        border-radius: 8px;
+        text-align: left;
+        line-height: 1.6;
+        color: #333;
+        font-size: 14px;
+      }
+      .vendor-block {
+        background: #f9f9f9;
+        padding: 16px;
+        border-radius: 8px;
+        text-align: left;
+      }
+      .vendor-name {
+        font-size: 16px;
+        font-weight: 600;
+        color: #1a1a1a;
+        margin-bottom: 8px;
+      }
+      .vendor-detail {
+        color: #666;
+        font-size: 14px;
+        margin-bottom: 4px;
+      }
+      .status-badge {
+        display: inline-block;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+      }
+      .status-pending {
+        background: #fff3cd;
+        color: #856404;
+      }
+      .status-confirmed {
+        background: #d4edda;
+        color: #155724;
+      }
+      .btn {
+        display: inline-block;
+        background: #000;
+        color: white;
+        text-decoration: none;
+        padding: 14px 32px;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 14px;
+        transition: all 0.2s ease;
+        margin-top: 16px;
+      }
+      .btn:hover {
+        background: #333;
+        transform: translateY(-1px);
+      }
+      .loading {
+        text-align: center;
+        padding: 40px;
+        color: #666;
+      }
+      .spinner {
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid #000;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 16px;
+      }
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+      .error {
+        background: #f8d7da;
+        color: #721c24;
+        padding: 16px;
+        border-radius: 8px;
+        margin-bottom: 16px;
+      }
+      .items-list {
+        margin-top: 12px;
+      }
+      .item-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 12px;
+        background: #fafafa;
+        border-radius: 8px;
+        margin-bottom: 8px;
+      }
+      .item-name {
+        font-weight: 500;
+        color: #1a1a1a;
+        font-size: 14px;
+      }
+      .item-details {
+        color: #666;
+        font-size: 12px;
+        margin-top: 4px;
+      }
+      .item-price {
+        font-weight: 600;
+        color: #1a1a1a;
+        font-size: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="success-card">
+        <div class="checkmark">
+          <svg viewBox="0 0 52 52">
+            <polyline points="14 27 22 35 38 19" />
+          </svg>
+        </div>
+        <h1>Payment Successful!</h1>
+        <p class="subtitle">Your order has been confirmed</p>
+      </div>
+
+      <div id="loading" class="loading">
+        <div class="spinner"></div>
+        <p>Loading order details...</p>
+      </div>
+
+      <div id="content" style="display: none">
+        <!-- Order Details -->
+        <div class="info-card">
+          <div class="section-title">Order Details</div>
+          <div class="detail-row">
+            <span class="detail-label">Order ID</span>
+            <span class="detail-value" id="orderId">-</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Status</span>
+            <span class="detail-value" id="orderStatus">-</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Order Date</span>
+            <span class="detail-value" id="orderDate">-</span>
+          </div>
+          <div class="detail-row">
+            <span class="detail-label">Payment Method</span>
+            <span class="detail-value" id="paymentMethod">-</span>
+          </div>
+
+          <!-- Order Items -->
+          <div style="margin-top: 20px">
+            <div class="section-title">Items</div>
+            <div class="items-list" id="itemsList"></div>
+          </div>
+
+          <!-- Total -->
+          <div class="total-row detail-row">
+            <span class="detail-label">Total Amount</span>
+            <span class="detail-value" id="totalAmount">-</span>
+          </div>
+        </div>
+
+        <!-- Delivery Address -->
+        <div class="info-card">
+          <div class="section-title">Delivery Address</div>
+          <div class="address-block" id="deliveryAddress">-</div>
+        </div>
+
+        <!-- Vendor Details -->
+        <div class="info-card" id="vendorCard" style="display: none">
+          <div class="section-title">Vendor Details</div>
+          <div class="vendor-block" id="vendorDetails">-</div>
+        </div>
+
+        <div style="text-align: center">
+          <a href="/" class="btn">Continue Shopping</a>
+        </div>
+      </div>
+
+      <div id="error" style="display: none"></div>
+    </div>
+
+    <script>
+      async function loadOrderDetails() {
+        try {
+          // Get orderId from URL params
+          const urlParams = new URLSearchParams(window.location.search);
+          const orderId = urlParams.get("orderId");
+          const token = localStorage.getItem("jwtToken");
+
+          if (!orderId) {
+            throw new Error("Order ID not found in URL");
+          }
+
+          if (!token) {
+            throw new Error(
+              "Authentication required. Please login to view order details.",
+            );
+          }
+
+          // Fetch order details using JWT token
+          const orderResponse = await fetch(`/api/orders/${orderId}`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+
+          if (!orderResponse.ok)
+            throw new Error("Failed to fetch order details");
+
+          const order = await orderResponse.json();
+
+          // Populate order details
+          document.getElementById("orderId").textContent = `#${order.id}`;
+
+          const statusBadge = document.createElement("span");
+          statusBadge.className = `status-badge ${
+            order.status === "CONFIRMED" ? "status-confirmed" : "status-pending"
+          }`;
+          statusBadge.textContent = order.status;
+          document.getElementById("orderStatus").innerHTML = "";
+          document.getElementById("orderStatus").appendChild(statusBadge);
+
+          document.getElementById("orderDate").textContent = new Date(
+            order.orderDate,
+          ).toLocaleString();
+          document.getElementById("paymentMethod").textContent =
+            order.paymentMethod || "Online";
+
+          // Populate items
+          const itemsList = document.getElementById("itemsList");
+          itemsList.innerHTML = "";
+          order.items.forEach((item) => {
+            const itemRow = document.createElement("div");
+            itemRow.className = "item-row";
+            itemRow.innerHTML = `
+              <div>
+                <div class="item-name">${item.productName || "Product"}</div>
+                <div class="item-details">Qty: ${item.quantity} × ₹${item.price.toFixed(2)}</div>
+              </div>
+              <div class="item-price">₹${(item.quantity * item.price).toFixed(2)}</div>
+            `;
+            itemsList.appendChild(itemRow);
+          });
+
+          document.getElementById("totalAmount").textContent =
+            `₹${order.totalAmount.toFixed(2)}`;
+
+          // Populate delivery address
+          if (order.deliveryAddress) {
+            const addr = order.deliveryAddress;
+            document.getElementById("deliveryAddress").innerHTML = `
+              ${addr.recipientName || ""}<br>
+              ${addr.addressLine1}<br>
+              ${addr.addressLine2 ? addr.addressLine2 + "<br>" : ""}
+              ${addr.city}, ${addr.state} ${addr.pincode}<br>
+              ${addr.country || "India"}<br>
+              ${addr.phoneNumber ? "Phone: " + addr.phoneNumber : ""}
+            `;
+          }
+
+          // Fetch vendor details if vendorId is available
+          if (order.vendorId) {
+            try {
+              const vendorResponse = await fetch(
+                `/api/vendor/${order.vendorId}`,
+              );
+              if (vendorResponse.ok) {
+                const vendor = await vendorResponse.json();
+                document.getElementById("vendorCard").style.display = "block";
+                document.getElementById("vendorDetails").innerHTML = `
+                  <div class="vendor-name">${vendor.storeName || vendor.businessName}</div>
+                  ${vendor.email ? `<div class="vendor-detail">📧 ${vendor.email}</div>` : ""}
+                  ${vendor.phone ? `<div class="vendor-detail">📞 ${vendor.phone}</div>` : ""}
+                  ${vendor.address ? `<div class="vendor-detail">📍 ${vendor.address}</div>` : ""}
+                `;
+              }
+            } catch (err) {
+              console.log("Vendor details not available");
+            }
+          }
+
+          // Show content, hide loading
+          document.getElementById("loading").style.display = "none";
+          document.getElementById("content").style.display = "block";
+        } catch (error) {
+          console.error("Error:", error);
+          document.getElementById("loading").style.display = "none";
+          document.getElementById("error").style.display = "block";
+          document.getElementById("error").className = "error";
+          document.getElementById("error").innerHTML = `
+            <strong>Error loading order details</strong><br>
+            ${error.message}<br><br>
+            <a href="/" class="btn">Go Home</a>
+          `;
+        }
+      }
+
+      // Load on page load
+      window.addEventListener("DOMContentLoaded", loadOrderDetails);
+    </script>
+  </body>
+</html>

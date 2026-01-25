@@ -19,4 +19,5 @@ public class PaymentResponse implements Serializable {
     private PaymentStatus status;
     private String transactionId;
     private Instant createdAt;
+    private String token; // JWT token for success page
 }
