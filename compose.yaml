@@ -26,6 +26,8 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       - SPRING_DATA_REDIS_HOST=redis
       - SPRING_DATA_REDIS_PORT=6379
+      - key_id=${key_id}
+      - key_secret=${key_secret}
     depends_on:
       redis:
         condition: service_healthy
