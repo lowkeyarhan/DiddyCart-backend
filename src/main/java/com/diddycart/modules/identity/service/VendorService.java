@@ -31,12 +31,11 @@ public class VendorService {
     @Autowired
     private JwtUtil jwtUtil;
 
-    // Register user as vendor
-    // EVICT CACHE: User profile cache needs update after role change
+    // Register user as vendor by userId and VendorRegistrationRequest
     @Transactional
     @CacheEvict(value = "user_profile", key = "#userId")
     public VendorRegisterResponse registerVendor(Long userId, VendorRegistrationRequest request) {
-        // Get user details
+        // Get user details by userId
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -50,42 +49,42 @@ public class VendorService {
             throw new RuntimeException("GSTIN already registered");
         }
 
-        // Create vendor profile
+        // Create vendor object
         Vendor vendor = new Vendor();
         vendor.setUser(user);
         vendor.setStoreName(request.getStoreName());
         vendor.setGstin(request.getGstin());
         vendor.setDescription(request.getDescription());
 
-        // Save vendor
+        // Save vendor to VendorRepository
         Vendor savedVendor = vendorRepository.save(vendor);
 
-        // Update user role to VENDOR
+        // Update user role to VENDOR by userId
         user.setRole(UserRole.VENDOR);
         User updatedUser = userRepository.save(user);
 
-        // Generate new JWT token with updated role
+        // Generate new JWT token with updated role by userId and role
         String newToken = jwtUtil.generateToken(updatedUser.getId(), updatedUser.getRole().name());
 
-        // Return response with new token
+        // Return response with new token by savedVendor
         VendorRegisterResponse response = mapToRegisterResponse(savedVendor);
         response.setNewToken(newToken);
 
         return response;
     }
 
-    // Get vendor profile by user ID checks cache first
+    // Get vendor profile by user ID by userId checks cache first
     // Sents the vendor profile data without user details
     @Cacheable(value = "vendors_by_user", key = "#userId")
     public VendorProfileResponse getVendorByUserId(Long userId) {
         Vendor vendor = vendorRepository.findByUserId(userId)
                 .orElseThrow(() -> new RuntimeException("Vendor profile not found"));
 
-        return mapToProfileData(vendor); // Use new mapper
+        return mapToProfileData(vendor); // Map Vendor to VendorProfileResponse
     }
 
-    // Get vendor profile by vendor ID checks cache first
-    // Sents the full vendor details including user info
+    // Get vendor profile by vendorId checks cache first
+    // Sents the full vendor details including user info by vendorId
     @Cacheable(value = "vendors", key = "#vendorId")
     public VendorResponse getVendorById(Long vendorId) {
         Vendor vendor = vendorRepository.findById(vendorId)
@@ -93,7 +92,7 @@ public class VendorService {
         return mapToResponse(vendor);
     }
 
-    // Update vendor profile and update both caches
+    // Update vendor profile by userId and VendorRegistrationRequest
     @Caching(put = {
             @CachePut(value = "vendors_by_user", key = "#userId"),
             @CachePut(value = "vendors", key = "#result.id")
@@ -109,15 +108,19 @@ public class VendorService {
             throw new RuntimeException("GSTIN already registered");
         }
 
+        // Update vendor fields
         vendor.setStoreName(request.getStoreName());
         vendor.setGstin(request.getGstin());
         vendor.setDescription(request.getDescription());
 
+        // Save vendor to VendorRepository
         Vendor updatedVendor = vendorRepository.save(vendor);
+
+        // Map Vendor to VendorResponse
         return mapToResponse(updatedVendor);
     }
 
-    // Helper method to map to VendorResponse DTO
+    // Map Vendor to VendorResponse
     private VendorResponse mapToResponse(Vendor vendor) {
         VendorResponse response = new VendorResponse();
         response.setId(vendor.getId());
@@ -130,7 +133,7 @@ public class VendorService {
         return response;
     }
 
-    // Helper method to map Vendor to VendorProfileResponse
+    // Map Vendor to VendorProfileResponse
     private VendorProfileResponse mapToProfileData(Vendor vendor) {
         VendorProfileResponse data = new VendorProfileResponse();
         data.setId(vendor.getId());
@@ -140,7 +143,7 @@ public class VendorService {
         return data;
     }
 
-    // Helper method to map Vendor to VendorRegisterResponse
+    // Map Vendor to VendorRegisterResponse
     private VendorRegisterResponse mapToRegisterResponse(Vendor vendor) {
         VendorRegisterResponse response = new VendorRegisterResponse();
         response.setId(vendor.getId());

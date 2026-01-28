@@ -39,8 +39,7 @@ public class AddressService {
     }
 
     // Fetch address of a user by ID
-    // SECURITY: Include userId in the key so User B cannot fetch User A's cached
-    // address.
+    // SECURITY: Include userId in the key so User B cannot fetch User A's cached address.
     @Cacheable(value = "address", key = "#userId + '_' + #addressId")
     public AddressResponse getAddressById(Long addressId, Long userId) {
         Address address = addressRepository.findById(addressId)
@@ -55,8 +54,7 @@ public class AddressService {
     }
 
     // Create new address
-    // Delete old cache for user's address list and add new address to cache since
-    // the address list was updated
+    // Delete old cache for user's address list and add new address to cache
     @Transactional
     @Caching(evict = { @CacheEvict(value = "user_addresses", key = "#userId") }, put = {
             @CachePut(value = "address", key = "#userId + '_' + #result.id") })
@@ -128,8 +126,7 @@ public class AddressService {
         addressRepository.delete(address);
     }
 
-    // Mapper to convert Address to AddressSummaryResponse used in see all addresses
-    // list
+    // Mapper to convert Address to AddressSummaryResponse used in see all addresses function
     private AddressSummaryResponse mapToSummaryResponse(Address address) {
         AddressSummaryResponse response = new AddressSummaryResponse();
         response.setId(address.getId());

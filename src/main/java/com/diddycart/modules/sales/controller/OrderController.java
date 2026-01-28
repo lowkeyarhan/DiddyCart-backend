@@ -29,6 +29,7 @@ public class OrderController {
             @RequestHeader("Authorization") String token,
             @Valid @RequestBody OrderRequest request) {
 
+        // Extract userId from token
         Long userId = jwtUtil.extractUserId(token.substring(7));
         return ResponseEntity.ok(orderService.placeOrder(userId, request));
     }
@@ -47,6 +48,7 @@ public class OrderController {
     public ResponseEntity<OrderResponse> getOrderById(
             @PathVariable Long id,
             @RequestHeader("Authorization") String token) {
+        // Extract userId from token
         Long userId = jwtUtil.extractUserId(token.substring(7));
         return ResponseEntity.ok(orderService.getOrderById(id, userId));
     }
@@ -56,6 +58,7 @@ public class OrderController {
     public ResponseEntity<OrderResponse> cancelOrder(
             @PathVariable Long id,
             @RequestHeader("Authorization") String token) {
+        // Extract userId from token
         Long userId = jwtUtil.extractUserId(token.substring(7));
         return ResponseEntity.ok(orderService.cancelOrder(id, userId));
     }
@@ -73,6 +76,7 @@ public class OrderController {
     public ResponseEntity<OrderResponse> updateOrderStatus(
             @PathVariable Long id,
             @RequestParam OrderStatus status) {
+        // Update order status by id and status
         return ResponseEntity.ok(orderService.updateOrderStatus(id, status));
     }
 }

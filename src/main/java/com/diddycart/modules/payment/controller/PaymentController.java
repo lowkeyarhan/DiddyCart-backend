@@ -20,20 +20,18 @@ public class PaymentController {
     @Autowired
     private OrderRepository orderRepository;
 
-    // Init Payment (Creates Order)
+    // Init Payment by orderId and token (Creates Order)
     @PostMapping("/init/{orderId}")
     public ResponseEntity<PaymentResponse> createOrder(
             @PathVariable Long orderId,
             @RequestHeader("Authorization") String token) {
         PaymentResponse response = paymentService.createRazorpayOrder(orderId);
-        // Store token temporarily with orderId for callback
-        response.setToken(token.substring(7)); // Remove "Bearer " prefix
+        // Store token temporarily with orderId for callback by token
+        response.setToken(token.substring(7));
         return ResponseEntity.ok(response);
     }
 
-    // Callback URL (The "Demo" approach)
-    // Razorpay redirects here with form data. We verify -> Redirect user to HTML
-    // page
+    // Payment Callback by razorpayOrderId, razorpayPaymentId, razorpaySignature
     @PostMapping(value = "/callback", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
     public RedirectView paymentCallback(
             @RequestParam("razorpay_order_id") String razorpayOrderId,
@@ -45,11 +43,10 @@ public class PaymentController {
                     razorpaySignature);
 
             if (orderId != null) {
-                // Get the user ID from order to generate a token reference
+                // Get the order from OrderRepository by orderId
                 Order order = orderRepository.findById(orderId).orElse(null);
                 if (order != null) {
-                    // Pass orderId to success page - user can use their existing JWT from
-                    // localStorage
+                    // Pass orderId to success page by orderId
                     return new RedirectView("/payment-success?orderId=" + orderId);
                 }
                 return new RedirectView("/payment-failure?reason=Order not found");

@@ -31,11 +31,12 @@ public class SecurityConfig {
     private UserRepository userRepository;
 
     @Bean
+    // Password Encoder
     public PasswordEncoder encoder() {
         return new BCryptPasswordEncoder();
     }
 
-    // Connects to the Database to load User Details
+    // User Details Service to load User Details from Database
     @Bean
     public UserDetailsService userDetailsService() {
         return email -> {
@@ -50,7 +51,7 @@ public class SecurityConfig {
         };
     }
 
-    // Authentication Provider
+    // Authentication Provider to authenticate User Details
     @Bean
     public DaoAuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider(userDetailsService());
@@ -58,26 +59,26 @@ public class SecurityConfig {
         return authProvider;
     }
 
-    // Authentication Manager
+    // Authentication Manager to authenticate User Details
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
     }
 
-    // Security Filter Chain
+    // Security Filter Chain to authenticate User Details
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        // Swagger / OpenAPI
+                        // Allow Swagger / OpenAPI
                         .requestMatchers(
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
                                 "/api-docs/**",
                                 "/v3/api-docs/**")
                         .permitAll()
-                        .requestMatchers("/api/payments/callback").permitAll() // Allow Razorpay Callback
+                        .requestMatchers("/api/payments/callback").permitAll() // Allow Razorpay Callback URL
                         .requestMatchers("/payment.html", "/css/**", "/js/**").permitAll()
                         .requestMatchers("/checkout", "/payment-success", "/payment-failure").permitAll()
                         .requestMatchers("/payment-success.html", "/payment-failure.html").permitAll()

@@ -38,34 +38,41 @@ public class CartService {
     @Autowired
     private UserRepository userRepository;
 
-    // Retrieve or Create Cart
+    // Retrieve or Create Cart by userId
     public Cart getOrCreateCart(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
+        // Find cart by user or create new cart
         return cartRepository.findByUser(user)
                 .orElseGet(() -> {
+                    // Create new cart
                     Cart newCart = new Cart();
                     newCart.setUser(user);
                     return cartRepository.save(newCart);
                 });
     }
 
-    // Get my Cart check cache first
+    // Get my Cart by userId checks cache first
     @Cacheable(value = "cart", key = "#userId")
     public CartResponse getCart(Long userId) {
         Cart cart = getOrCreateCart(userId);
+
+        // Map Cart to CartResponse
         return mapToResponse(cart);
     }
 
-    // Add Item to Cart and update cache
+    // Add Item to Cart by userId, productId, quantity and update cache
     @Transactional
     @CachePut(value = "cart", key = "#userId")
     public CartResponse addToCart(Long userId, Long productId, Integer quantity) {
         Cart cart = getOrCreateCart(userId);
+
+        // Find product by productId
         Product product = productRepository.findById(productId)
                 .orElseThrow(() -> new RuntimeException("Product not found"));
 
+        // Check if product has enough stock
         if (product.getStockQuantity() < quantity) {
             throw new RuntimeException("Not enough stock available");
         }
@@ -75,10 +82,12 @@ public class CartService {
             cart.setItems(new ArrayList<>());
         }
 
+        // Find existing cart item by productId
         Optional<CartItem> existing = cart.getItems().stream()
                 .filter(item -> item.getProduct().getId().equals(productId))
                 .findFirst();
 
+        // If existing cart item is found, update quantity
         if (existing.isPresent()) {
             CartItem item = existing.get();
             item.setQuantity(item.getQuantity() + quantity);
@@ -89,47 +98,57 @@ public class CartService {
             newItem.setProduct(product);
             newItem.setQuantity(quantity);
 
+            // Save new cart item
             cartItemRepository.save(newItem);
+
+            // Add new cart item to cart
             cart.getItems().add(newItem);
         }
 
-        // Now 'cart' has the new item in its list
+        // Map Cart to CartResponse
         return mapToResponse(cart);
     }
 
-    // Remove Item from Cart and update cache
+    // Remove Item from Cart by userId, cartItemId and update cache
     @Transactional
     @CachePut(value = "cart", key = "#userId")
     public CartResponse removeFromCart(Long userId, Long cartItemId) {
+        // Find cart item by cartItemId
         CartItem item = cartItemRepository.findById(cartItemId)
                 .orElseThrow(() -> new RuntimeException("Item not found"));
 
-        // Security Check
+        // Security Check by userId and cartItemId
         if (!item.getCart().getUser().getId().equals(userId)) {
             throw new RuntimeException("You are not authorized to remove this item");
         }
 
+        // Remove cart item from cart
         if (item.getCart().getItems() != null) {
             item.getCart().getItems().remove(item);
         }
 
+        // Delete cart item
         cartItemRepository.delete(item);
 
+        // Map Cart to CartResponse
         return getCart(userId);
     }
 
-    // Clear Cart and update cache
+    // Clear Cart by userId and update cache
     @Transactional
     @CacheEvict(value = "cart", key = "#userId")
     public void clearCart(Long userId) {
+        // Find cart by userId
         Cart cart = getOrCreateCart(userId);
+
+        // If cart has items, delete all cart items
         if (cart.getItems() != null) {
             cartItemRepository.deleteAll(cart.getItems());
             cart.getItems().clear();
         }
     }
 
-    // Cart response mapper function
+    // Map Cart to CartResponse
     private CartResponse mapToResponse(Cart cart) {
         CartResponse response = new CartResponse();
         response.setCartId(cart.getId());

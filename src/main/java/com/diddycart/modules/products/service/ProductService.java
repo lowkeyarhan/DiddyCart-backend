@@ -40,12 +40,15 @@ public class ProductService {
 
     // ADMIN/VENDOR Add a new Product
     public ProductResponse addProduct(ProductRequest req, MultipartFile image, Long vendorUserId) throws IOException {
+        // Get category by categoryId
         Category category = categoryRepository.findById(req.getCategoryId())
                 .orElseThrow(() -> new RuntimeException("Category not found"));
 
+        // Get vendor by vendorUserId
         Vendor vendor = vendorRepository.findByUserId(vendorUserId)
                 .orElseThrow(() -> new RuntimeException("Vendor profile not found"));
 
+        // Create Product object
         Product product = new Product();
         product.setName(req.getName());
         product.setDescription(req.getDescription());
@@ -56,8 +59,10 @@ public class ProductService {
 
         // Handle Image
         if (image != null && !image.isEmpty()) {
+            // Upload image to file service
             String imageUrl = fileService.uploadImage(image);
 
+            // Create ProductImage object
             ProductImage productImage = new ProductImage();
             productImage.setImageUrl(imageUrl);
             productImage.setProduct(product);
@@ -68,24 +73,29 @@ public class ProductService {
             product.getImages().add(productImage);
         }
 
+        // Save product to ProductRepository
         Product savedProduct = productRepository.save(product);
+
+        // Map Product to ProductResponse
         return mapToResponse(savedProduct);
     }
 
-    // Get all products (Paginated)
+    // Get all products by pageable (Paginated)
     public Page<ProductResponse> getAllProducts(Pageable pageable) {
         return productRepository.findAll(pageable).map(this::mapToResponse);
     }
 
-    // Get Product by ID check cache first
+    // Get Product by id checks cache first
     @Cacheable(value = "products", key = "#id")
     public ProductResponse getProductById(Long id) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Product not found with id: " + id));
+
+        // Map Product to ProductResponse
         return mapToResponse(product);
     }
 
-    // Search products by name
+    // Search products by name by keyword (Paginated)
     public Page<ProductResponse> searchProducts(String keyword, Pageable pageable) {
         return productRepository.findByNameContainingIgnoreCase(keyword, pageable).map(this::mapToResponse);
     }
@@ -94,27 +104,29 @@ public class ProductService {
     @CachePut(value = "products", key = "#id")
     public ProductResponse updateProduct(Long id, ProductRequest req, MultipartFile image, Long vendorUserId)
             throws IOException {
+        // Get product by id
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Product not found with id: " + id));
 
-        // Verify ownership
+        // Verify ownership by vendorUserId
         if (!product.getVendor().getUser().getId().equals(vendorUserId)) {
             throw new RuntimeException("You are not authorized to update this product");
         }
 
-        // Update fields
+        // Update fields by req
         product.setName(req.getName());
         product.setDescription(req.getDescription());
         product.setPrice(req.getPrice());
         product.setStockQuantity(req.getStockQuantity());
 
+        // Get category by categoryId
         Category category = categoryRepository.findById(req.getCategoryId())
                 .orElseThrow(() -> new RuntimeException("Category not found"));
         product.setCategory(category);
 
-        // Handle Image Update
+        // Handle Image Update by image
         if (image != null && !image.isEmpty()) {
-            // Remove old images
+            // Remove old images by product.getImages()
             if (product.getImages() != null && !product.getImages().isEmpty()) {
                 for (ProductImage oldImage : product.getImages()) {
                     try {
@@ -128,16 +140,24 @@ public class ProductService {
 
             // Add new image
             String imageUrl = fileService.uploadImage(image);
+
+            // Create ProductImage object
             ProductImage productImage = new ProductImage();
             productImage.setImageUrl(imageUrl);
             productImage.setProduct(product);
 
+            // Initialize list if null
             if (product.getImages() == null)
                 product.setImages(new ArrayList<>());
+
+            // Add productImage to product.getImages()
             product.getImages().add(productImage);
         }
 
+        // Save product to ProductRepository
         Product updatedProduct = productRepository.save(product);
+
+        // Map Product to ProductResponse
         return mapToResponse(updatedProduct);
     }
 
@@ -174,7 +194,7 @@ public class ProductService {
         productRepository.save(product);
     }
 
-    // Product response mapper function
+    // Map Product to ProductResponse
     private ProductResponse mapToResponse(Product product) {
         ProductResponse res = new ProductResponse();
         res.setId(product.getId());
@@ -185,12 +205,14 @@ public class ProductService {
         res.setCategoryName(product.getCategory().getType());
         res.setVendorStoreName(product.getVendor().getStoreName());
 
-        // Map images
+        // Map images by product.getImages()
         if (product.getImages() != null) {
             res.setImageUrls(product.getImages().stream()
                     .map(ProductImage::getImageUrl)
                     .collect(Collectors.toList()));
         }
+
+        // Return ProductResponse
         return res;
     }
 }

@@ -33,11 +33,12 @@ public class PaymentService {
     @Value("${razorpay.key.secret}")
     private String keySecret;
 
-    // Create Razorpay Order
+    // Create Razorpay Order by orderId
     public PaymentResponse createRazorpayOrder(Long orderId) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found"));
 
+        // Check if order is already paid for
         if (order.getPaymentStatus() == PaymentStatus.COMPLETED) {
             throw new RuntimeException("Order is already paid for");
         }
@@ -49,13 +50,14 @@ public class PaymentService {
             orderRequest.put("currency", "INR");
             orderRequest.put("receipt", "txn_" + order.getId());
 
-            // Add notes to help identify order in callback if needed
+            // Add notes to help identify order in callback by internal_order_id
             JSONObject notes = new JSONObject();
             notes.put("internal_order_id", order.getId().toString());
             orderRequest.put("notes", notes);
 
             com.razorpay.Order razorpayOrder = razorpay.orders.create(orderRequest);
 
+            // Map Order to PaymentResponse
             PaymentResponse response = new PaymentResponse();
             response.setOrderId(order.getId());
             response.setTransactionId(razorpayOrder.get("id"));
@@ -68,38 +70,43 @@ public class PaymentService {
         }
     }
 
-    // 2. Verify Callback (The "Demo" Logic)
+    // Verify Callback by razorpayOrderId, razorpayPaymentId, razorpaySignature
     @Transactional
     public boolean verifyPaymentCallback(String razorpayOrderId, String razorpayPaymentId, String razorpaySignature) {
         return verifyPaymentCallbackAndGetOrderId(razorpayOrderId, razorpayPaymentId, razorpaySignature) != null;
     }
 
-    // 2b. Verify Callback and Return Order ID
+    // Verify Callback and Return Order ID by razorpayOrderId, razorpayPaymentId,
+    // razorpaySignature
     @Transactional
-    public Long verifyPaymentCallbackAndGetOrderId(String razorpayOrderId, String razorpayPaymentId, String razorpaySignature) {
+    public Long verifyPaymentCallbackAndGetOrderId(String razorpayOrderId, String razorpayPaymentId,
+            String razorpaySignature) {
         try {
-            // Manual Signature Construction (Like in your demo)
+            // Manual Signature Construction by razorpayOrderId, razorpayPaymentId
             String payload = razorpayOrderId + "|" + razorpayPaymentId;
             boolean isValid = Utils.verifySignature(payload, razorpaySignature, keySecret);
 
             if (isValid) {
-
+                // Fetch Razorpay Order by razorpayOrderId
                 RazorpayClient razorpay = new RazorpayClient(keyId, keySecret);
                 com.razorpay.Order rzpOrder = razorpay.orders.fetch(razorpayOrderId);
+                // Get internal_order_id from notes
                 String internalOrderIdStr = rzpOrder.get("notes").getClass().equals(JSONObject.class)
                         ? ((JSONObject) rzpOrder.get("notes")).getString("internal_order_id")
                         : null;
 
+                // Check if internal_order_id is null
                 if (internalOrderIdStr == null)
                     return null;
 
+                // Get order by internal_order_id
                 Long internalOrderId = Long.parseLong(internalOrderIdStr);
                 Order order = orderRepository.findById(internalOrderId).orElseThrow();
 
                 if (order.getPaymentStatus() == PaymentStatus.COMPLETED)
                     return internalOrderId;
 
-                // Update DB
+                // Create Payment object
                 Payment payment = new Payment();
                 payment.setOrder(order);
                 payment.setAmount(order.getTotal());
@@ -108,15 +115,19 @@ public class PaymentService {
                 payment.setTransactionId(razorpayPaymentId);
                 paymentRepository.save(payment);
 
+                // Update order status to CONFIRMED
                 order.setPaymentStatus(PaymentStatus.COMPLETED);
                 order.setStatus(OrderStatus.CONFIRMED);
                 orderRepository.save(order);
 
+                // Return orderId by internalOrderId
                 return internalOrderId;
             }
+            // Return null if payment verification failed
             return null;
 
         } catch (Exception e) {
+            // Return null if exception occurs
             e.printStackTrace();
             return null;
         }

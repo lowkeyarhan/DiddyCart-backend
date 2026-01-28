@@ -25,7 +25,7 @@ public class ProductController {
     @Autowired
     private JwtUtil jwtUtil;
 
-    // Get All Products (Paginated)
+    // Get All Products by pageable (Paginated)
     @GetMapping
     public ResponseEntity<Page<ProductResponse>> getAllProducts(Pageable pageable) {
         return ResponseEntity.ok(productService.getAllProducts(pageable));

@@ -40,16 +40,23 @@ public class CartController {
     @DeleteMapping("/remove/{cartItemId}")
     public ResponseEntity<CartResponse> removeFromCart(
             @PathVariable Long cartItemId,
-            @RequestHeader("Authorization") String token) { // <--- Added Token
+            @RequestHeader("Authorization") String token) {
 
+        // Extract userId from token
         Long userId = jwtUtil.extractUserId(token.substring(7));
+
+        // Remove item from cart by userId and cartItemId
         return ResponseEntity.ok(cartService.removeFromCart(userId, cartItemId));
     }
 
     // Clear Cart
     @DeleteMapping("/clear")
     public ResponseEntity<String> clearCart(@RequestHeader("Authorization") String token) {
+
+        // Extract userId from token
         Long userId = jwtUtil.extractUserId(token.substring(7));
+
+        // Clear cart by userId
         cartService.clearCart(userId);
         return ResponseEntity.ok("Cart cleared");
     }

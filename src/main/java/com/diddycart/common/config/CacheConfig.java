@@ -19,6 +19,7 @@ import java.util.concurrent.Callable;
 @Configuration
 public class CacheConfig {
 
+    // Cache Manager Configuration
     @Bean
     @Primary
     public CacheManager cacheManager(RedisConnectionFactory connectionFactory) {
@@ -40,9 +41,7 @@ public class CacheConfig {
         return new LoggingCacheManager(redisManager);
     }
 
-    /**
-     * A Decorator for CacheManager that returns LoggingCache instances.
-     */
+    // A Decorator for CacheManager that returns LoggingCache instances
     static class LoggingCacheManager implements CacheManager {
         private final CacheManager delegate;
 
@@ -62,17 +61,17 @@ public class CacheConfig {
         }
     }
 
-    /**
-     * A Decorator for Cache that logs Hits, Misses, Puts, and Evictions.
-     */
+    // A Decorator for Cache that returns LoggingCache instances
     static class LoggingCache implements Cache {
         private final Cache delegate;
         private final Logger log = LoggerFactory.getLogger(LoggingCache.class);
 
+        // Constructor
         public LoggingCache(Cache delegate) {
             this.delegate = delegate;
         }
 
+        // Get value from cache
         @Override
         public ValueWrapper get(Object key) {
             ValueWrapper value = delegate.get(key);
@@ -84,6 +83,7 @@ public class CacheConfig {
             return value;
         }
 
+        // Get value from cache by key and type
         @Override
         public <T> T get(Object key, Class<T> type) {
             T value = delegate.get(key, type);
@@ -95,51 +95,59 @@ public class CacheConfig {
             return value;
         }
 
+        // Get value from cache by key and valueLoader
         @Override
         public <T> T get(Object key, Callable<T> valueLoader) {
             log.debug("🔍 CACHE LOAD | Cache: {} | Key: {}", getName(), key);
             return delegate.get(key, valueLoader);
         }
 
+        // Put value into cache
         @Override
         public void put(Object key, Object value) {
             log.info("💾 CACHE PUT  | Cache: {} | Key: {}", getName(), key);
             delegate.put(key, value);
         }
 
+        // Evict value from cache
         @Override
         public void evict(Object key) {
             log.info("🗑️ CACHE EVICT| Cache: {} | Key: {}", getName(), key);
             delegate.evict(key);
         }
 
+        // Clear cache
         @Override
         public void clear() {
             log.info("🧹 CACHE CLEAR| Cache: {}", getName());
             delegate.clear();
         }
 
-        // --- Standard Delegation Methods ---
+        // Standard Delegation Methods
         @Override
         public String getName() {
             return delegate.getName();
         }
 
+        // Get native cache
         @Override
         public Object getNativeCache() {
             return delegate.getNativeCache();
         }
 
+        // Put value into cache if absent
         @Override
         public ValueWrapper putIfAbsent(Object key, Object value) {
             return delegate.putIfAbsent(key, value);
         }
 
+        // Evict value from cache if present
         @Override
         public boolean evictIfPresent(Object key) {
             return delegate.evictIfPresent(key);
         }
 
+        // Invalidate cache
         @Override
         public boolean invalidate() {
             return delegate.invalidate();

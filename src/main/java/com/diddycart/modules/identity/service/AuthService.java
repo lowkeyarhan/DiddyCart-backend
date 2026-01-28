@@ -37,7 +37,7 @@ public class AuthService {
     @Autowired
     private JwtUtil jwtUtil;
 
-    // User Registration (Auto-login after registration)
+    // User Registration by RegisterRequest (Auto-login after registration)
     public AuthResponse register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new RuntimeException("Email is already in use!");
@@ -52,15 +52,15 @@ public class AuthService {
 
         User savedUser = userRepository.save(user);
 
-        // Create empty cart for the user
+        // Create empty cart for the user by userId
         Cart cart = new Cart();
         cart.setUser(savedUser);
         cartRepository.save(cart);
 
-        // Generate JWT token for auto-login
+        // Generate JWT token for auto-login by userId and role
         String token = jwtUtil.generateToken(savedUser.getId(), savedUser.getRole().name());
 
-        // Return AuthResponse with token
+        // Return AuthResponse with token by userId and name
         AuthResponse response = new AuthResponse();
         response.setToken(token);
         response.setName(savedUser.getName());
@@ -69,20 +69,20 @@ public class AuthService {
         return response;
     }
 
-    // User Login
+    // User Login by LoginRequest
     public AuthResponse login(LoginRequest request) {
         // Authenticate
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
 
-        // Fetch User details by email
+        // Fetch User details by email from UserRepository
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        // Generate JWT token
+        // Generate JWT token by userId and role
         String token = jwtUtil.generateToken(user.getId(), user.getRole().name());
 
-        // Return Response
+        // Return Response by userId and name
         AuthResponse response = new AuthResponse();
         response.setToken(token);
         response.setName(user.getName());
@@ -91,12 +91,13 @@ public class AuthService {
         return response;
     }
 
-    // Fetch User Profile (view my profile)
+    // Fetch User Profile by userId (view my profile)
     @Cacheable(value = "user_profile", key = "#userId")
     public UserProfileResponse getUserProfile(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
+        // Map User to UserProfileResponse
         UserProfileResponse response = new UserProfileResponse();
         response.setId(user.getId());
         response.setName(user.getName());
@@ -107,23 +108,23 @@ public class AuthService {
         return response;
     }
 
-    // Update user profile
+    // Update user profile by userId and UserProfileRequest
     @CachePut(value = "user_profile", key = "#userId")
     public UserProfileResponse updateUserProfile(Long userId, UserProfileRequest request) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        // Update name if provided
+        // Update name if provided in UserProfileRequest
         if (request.getName() != null && !request.getName().isBlank()) {
             user.setName(request.getName());
         }
 
-        // Update phone if provided
+        // Update phone if provided in UserProfileRequest
         if (request.getPhone() != null && !request.getPhone().isBlank()) {
             user.setPhone(request.getPhone());
         }
 
-        // Update email if provided (Check for uniqueness)
+        // Update email if provided in UserProfileRequest (Check for uniqueness)
         if (request.getEmail() != null && !request.getEmail().isBlank()) {
             // Only check if email is actually changing
             if (!request.getEmail().equals(user.getEmail())) {
@@ -134,12 +135,12 @@ public class AuthService {
             }
         }
 
-        // Update password if provided
+        // Update password if provided in UserProfileRequest
         if (request.getPassword() != null && !request.getPassword().isBlank()) {
             user.setPassword(passwordEncoder.encode(request.getPassword()));
         }
 
-        // Save and Return
+        // Save and Return by updatedUser
         User updatedUser = userRepository.save(user);
 
         UserProfileResponse response = new UserProfileResponse();
