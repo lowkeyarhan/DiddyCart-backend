@@ -5,11 +5,13 @@ import com.diddycart.modules.identity.dto.authentication.LoginRequest;
 import com.diddycart.modules.identity.dto.authentication.RegisterRequest;
 import com.diddycart.modules.identity.dto.profile.UserProfileRequest;
 import com.diddycart.modules.identity.dto.profile.UserProfileResponse;
+import com.diddycart.modules.identity.events.UserRegisteredEvent;
 import com.diddycart.modules.identity.models.UserRole;
 import com.diddycart.modules.identity.models.User;
 import com.diddycart.modules.sales.models.Cart;
 import com.diddycart.modules.sales.repository.CartRepository;
 import com.diddycart.modules.identity.repository.UserRepository;
+import com.diddycart.common.infrastructure.EventProducer;
 import com.diddycart.common.security.JwtUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CachePut;
@@ -35,6 +37,9 @@ public class AuthService {
     private AuthenticationManager authenticationManager;
 
     @Autowired
+    private EventProducer eventProducer;
+
+    @Autowired
     private JwtUtil jwtUtil;
 
     // User Registration by RegisterRequest (Auto-login after registration)
@@ -56,6 +61,15 @@ public class AuthService {
         Cart cart = new Cart();
         cart.setUser(savedUser);
         cartRepository.save(cart);
+
+        // Create User Registered Event
+        UserRegisteredEvent event = new UserRegisteredEvent(
+                savedUser.getId(),
+                savedUser.getEmail(),
+                savedUser.getName());
+
+        // Send User Registered Event to Kafka
+        eventProducer.sendUserRegistered(event);
 
         // Generate JWT token for auto-login by userId and role
         String token = jwtUtil.generateToken(savedUser.getId(), savedUser.getRole().name());
