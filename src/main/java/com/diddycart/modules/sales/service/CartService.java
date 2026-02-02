@@ -1,7 +1,7 @@
 package com.diddycart.modules.sales.service;
 
-import com.diddycart.modules.sales.dto.CartItemResponse;
-import com.diddycart.modules.sales.dto.CartResponse;
+import com.diddycart.modules.sales.dto.cart.CartItemResponse;
+import com.diddycart.modules.sales.dto.cart.CartResponse;
 import com.diddycart.modules.sales.models.Cart;
 import com.diddycart.modules.sales.models.CartItem;
 import com.diddycart.modules.identity.models.User;

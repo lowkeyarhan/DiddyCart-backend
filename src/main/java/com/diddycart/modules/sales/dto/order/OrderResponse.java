@@ -1,4 +1,4 @@
-package com.diddycart.modules.sales.dto;
+package com.diddycart.modules.sales.dto.order;
 
 import com.diddycart.modules.sales.models.OrderStatus;
 import com.diddycart.modules.payment.models.PaymentStatus;

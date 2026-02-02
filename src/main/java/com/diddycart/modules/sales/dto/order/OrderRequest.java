@@ -1,4 +1,4 @@
-package com.diddycart.modules.sales.dto;
+package com.diddycart.modules.sales.dto.order;
 
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;

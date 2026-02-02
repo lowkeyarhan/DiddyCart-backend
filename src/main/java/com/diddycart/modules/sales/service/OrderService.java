@@ -1,14 +1,14 @@
 package com.diddycart.modules.sales.service;
 
-import com.diddycart.modules.sales.dto.OrderItemResponse;
-import com.diddycart.modules.sales.dto.OrderRequest;
-import com.diddycart.modules.sales.dto.OrderResponse;
 import com.diddycart.modules.sales.models.OrderStatus;
 import com.diddycart.modules.payment.models.PaymentStatus;
 import com.diddycart.modules.products.models.Product;
 import com.diddycart.modules.products.repository.ProductRepository;
 import com.diddycart.modules.sales.models.Order;
 import com.diddycart.modules.sales.models.OrderItem;
+import com.diddycart.modules.sales.dto.order.OrderItemResponse;
+import com.diddycart.modules.sales.dto.order.OrderRequest;
+import com.diddycart.modules.sales.dto.order.OrderResponse;
 import com.diddycart.modules.sales.models.Cart;
 import com.diddycart.modules.sales.models.CartItem;
 import com.diddycart.modules.identity.models.User;

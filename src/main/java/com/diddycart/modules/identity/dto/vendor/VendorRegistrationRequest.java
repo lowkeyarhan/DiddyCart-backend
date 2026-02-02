@@ -1,4 +1,4 @@
-package com.diddycart.modules.identity.dto;
+package com.diddycart.modules.identity.dto.vendor;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;

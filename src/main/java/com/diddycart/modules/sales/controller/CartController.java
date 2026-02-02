@@ -1,7 +1,7 @@
 package com.diddycart.modules.sales.controller;
 
-import com.diddycart.modules.sales.dto.AddToCartRequest;
-import com.diddycart.modules.sales.dto.CartResponse;
+import com.diddycart.modules.sales.dto.cart.AddToCartRequest;
+import com.diddycart.modules.sales.dto.cart.CartResponse;
 import com.diddycart.modules.sales.service.CartService;
 import com.diddycart.common.security.JwtUtil;
 import jakarta.validation.Valid;

@@ -1,4 +1,4 @@
-package com.diddycart.modules.identity.dto;
+package com.diddycart.modules.identity.dto.address;
 
 import com.diddycart.modules.identity.models.AddressLabel;
 import jakarta.validation.constraints.NotBlank;

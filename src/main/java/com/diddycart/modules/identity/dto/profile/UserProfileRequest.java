@@ -1,4 +1,4 @@
-package com.diddycart.modules.identity.dto;
+package com.diddycart.modules.identity.dto.profile;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.Pattern;

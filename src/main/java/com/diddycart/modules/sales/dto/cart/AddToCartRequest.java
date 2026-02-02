@@ -1,4 +1,4 @@
-package com.diddycart.modules.sales.dto;
+package com.diddycart.modules.sales.dto.cart;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;

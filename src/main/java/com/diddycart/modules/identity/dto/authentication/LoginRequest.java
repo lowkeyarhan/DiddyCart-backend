@@ -1,4 +1,4 @@
-package com.diddycart.modules.identity.dto;
+package com.diddycart.modules.identity.dto.authentication;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;

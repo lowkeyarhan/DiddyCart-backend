@@ -1,9 +1,9 @@
 package com.diddycart.modules.identity.controller;
 
-import com.diddycart.modules.identity.dto.VendorProfileResponse;
-import com.diddycart.modules.identity.dto.VendorRegisterResponse;
-import com.diddycart.modules.identity.dto.VendorRegistrationRequest;
-import com.diddycart.modules.identity.dto.VendorResponse;
+import com.diddycart.modules.identity.dto.vendor.VendorProfileResponse;
+import com.diddycart.modules.identity.dto.vendor.VendorRegisterResponse;
+import com.diddycart.modules.identity.dto.vendor.VendorRegistrationRequest;
+import com.diddycart.modules.identity.dto.vendor.VendorResponse;
 import com.diddycart.modules.identity.service.VendorService;
 import com.diddycart.common.security.JwtUtil;
 import jakarta.validation.Valid;

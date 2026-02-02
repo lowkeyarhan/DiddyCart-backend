@@ -1,10 +1,10 @@
 package com.diddycart.modules.identity.service;
 
-import com.diddycart.modules.identity.dto.AuthResponse;
-import com.diddycart.modules.identity.dto.LoginRequest;
-import com.diddycart.modules.identity.dto.RegisterRequest;
-import com.diddycart.modules.identity.dto.UserProfileRequest;
-import com.diddycart.modules.identity.dto.UserProfileResponse;
+import com.diddycart.modules.identity.dto.authentication.AuthResponse;
+import com.diddycart.modules.identity.dto.authentication.LoginRequest;
+import com.diddycart.modules.identity.dto.authentication.RegisterRequest;
+import com.diddycart.modules.identity.dto.profile.UserProfileRequest;
+import com.diddycart.modules.identity.dto.profile.UserProfileResponse;
 import com.diddycart.modules.identity.models.UserRole;
 import com.diddycart.modules.identity.models.User;
 import com.diddycart.modules.sales.models.Cart;

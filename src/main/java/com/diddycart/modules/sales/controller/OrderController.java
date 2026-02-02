@@ -1,7 +1,7 @@
 package com.diddycart.modules.sales.controller;
 
-import com.diddycart.modules.sales.dto.OrderRequest;
-import com.diddycart.modules.sales.dto.OrderResponse;
+import com.diddycart.modules.sales.dto.order.OrderRequest;
+import com.diddycart.modules.sales.dto.order.OrderResponse;
 import com.diddycart.modules.sales.models.OrderStatus;
 import com.diddycart.modules.sales.service.OrderService;
 import com.diddycart.common.security.JwtUtil;

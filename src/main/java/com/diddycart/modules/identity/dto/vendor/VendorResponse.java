@@ -1,6 +1,4 @@
-package com.diddycart.modules.identity.dto;
-
-import java.io.Serializable;
+package com.diddycart.modules.identity.dto.vendor;
 
 import lombok.Data;
 
@@ -8,13 +6,9 @@ import lombok.Data;
 // What the backend sends to the frontend regarding vendor information.
 
 @Data
-public class VendorRegisterResponse implements Serializable {
-
-    private static final long serialVersionUID = 1L;
-
+public class VendorResponse {
     private Long id;
     private Long userId;
-    private String newToken;
     private String storeName;
     private String gstin;
     private String description;

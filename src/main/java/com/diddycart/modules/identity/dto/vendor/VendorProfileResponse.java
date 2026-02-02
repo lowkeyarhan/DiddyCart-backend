@@ -1,4 +1,4 @@
-package com.diddycart.modules.identity.dto;
+package com.diddycart.modules.identity.dto.vendor;
 
 import lombok.Data;
 import java.io.Serializable;

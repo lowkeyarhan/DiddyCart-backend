@@ -1,8 +1,8 @@
 package com.diddycart.modules.identity.service;
 
-import com.diddycart.modules.identity.dto.AddressRequest;
-import com.diddycart.modules.identity.dto.AddressResponse;
-import com.diddycart.modules.identity.dto.AddressSummaryResponse;
+import com.diddycart.modules.identity.dto.address.AddressRequest;
+import com.diddycart.modules.identity.dto.address.AddressResponse;
+import com.diddycart.modules.identity.dto.address.AddressSummaryResponse;
 import com.diddycart.modules.identity.models.Address;
 import com.diddycart.modules.identity.models.User;
 import com.diddycart.modules.identity.repository.AddressRepository;
@@ -39,7 +39,8 @@ public class AddressService {
     }
 
     // Fetch address of a user by ID
-    // SECURITY: Include userId in the key so User B cannot fetch User A's cached address.
+    // SECURITY: Include userId in the key so User B cannot fetch User A's cached
+    // address.
     @Cacheable(value = "address", key = "#userId + '_' + #addressId")
     public AddressResponse getAddressById(Long addressId, Long userId) {
         Address address = addressRepository.findById(addressId)
@@ -126,7 +127,8 @@ public class AddressService {
         addressRepository.delete(address);
     }
 
-    // Mapper to convert Address to AddressSummaryResponse used in see all addresses function
+    // Mapper to convert Address to AddressSummaryResponse used in see all addresses
+    // function
     private AddressSummaryResponse mapToSummaryResponse(Address address) {
         AddressSummaryResponse response = new AddressSummaryResponse();
         response.setId(address.getId());

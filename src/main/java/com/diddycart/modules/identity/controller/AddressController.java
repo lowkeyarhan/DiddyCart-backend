@@ -1,8 +1,8 @@
 package com.diddycart.modules.identity.controller;
 
-import com.diddycart.modules.identity.dto.AddressRequest;
-import com.diddycart.modules.identity.dto.AddressResponse;
-import com.diddycart.modules.identity.dto.AddressSummaryResponse;
+import com.diddycart.modules.identity.dto.address.AddressRequest;
+import com.diddycart.modules.identity.dto.address.AddressResponse;
+import com.diddycart.modules.identity.dto.address.AddressSummaryResponse;
 import com.diddycart.modules.identity.service.AddressService;
 import com.diddycart.common.security.JwtUtil;
 import jakarta.validation.Valid;
