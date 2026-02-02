@@ -1,6 +1,7 @@
 package com.diddycart.common.infrastructure;
 
 import com.diddycart.modules.identity.events.UserRegisteredEvent;
+import com.diddycart.modules.payment.events.PaymentFailedEvent;
 import com.diddycart.modules.sales.events.OrderPlacedEvent;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -32,13 +33,21 @@ public class EventConsumer {
     // Listen for Order Placed Event
     @KafkaListener(topics = "order-placed", groupId = "diddycart-group")
     public void handleOrderPlaced(OrderPlacedEvent event) {
-        CompletableFuture.runAsync(() -> {
-            System.out.println("⚙️ Processing order [Thread: " + Thread.currentThread().getName() + "]");
-            emailService.sendOrderConfirmation(
-                    event.getEmail(),
-                    event.getOrderId(),
-                    event.getAmount().toString(),
-                    event.getItems());
-        }, workerPool);
+        emailService.sendOrderConfirmation(
+                event.getEmail(),
+                event.getOrderId(),
+                event.getAmount().toString(),
+                event.getPaymentMode(), // Pass Mode
+                event.getItems());
+    }
+
+    // 2. Add New Listener for Failure
+    @KafkaListener(topics = "payment-failed", groupId = "diddycart-group")
+    public void handlePaymentFailed(PaymentFailedEvent event) {
+        emailService.sendPaymentFailedEmail(
+                event.getEmail(),
+                event.getOrderId(),
+                event.getAmount().toString(),
+                event.getPaymentMode());
     }
 }

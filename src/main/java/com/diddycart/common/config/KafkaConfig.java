@@ -25,6 +25,12 @@ public class KafkaConfig {
         return TopicBuilder.name("order-placed").partitions(2).replicas(1).build();
     }
 
+    // Define the payment-failed topic
+    @Bean
+    public NewTopic paymentFailedTopic() {
+        return TopicBuilder.name("payment-failed").partitions(2).replicas(1).build();
+    }
+
     // Define a ThreadPoolTaskExecutor for Kafka event processing
     @Bean(name = "kafkaWorkerPool")
     public Executor kafkaWorkerPool() {

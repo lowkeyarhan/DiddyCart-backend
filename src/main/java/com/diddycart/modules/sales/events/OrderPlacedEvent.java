@@ -14,6 +14,7 @@ public class OrderPlacedEvent {
     private Long userId;
     private String email;
     private BigDecimal amount;
+    private String paymentMode;
     private List<ItemDetail> items;
 
     @Data
