@@ -9,11 +9,9 @@ import com.diddycart.modules.sales.models.OrderItem;
 import com.diddycart.modules.sales.dto.order.OrderItemResponse;
 import com.diddycart.modules.sales.dto.order.OrderRequest;
 import com.diddycart.modules.sales.dto.order.OrderResponse;
-import com.diddycart.modules.sales.events.OrderPlacedEvent;
 import com.diddycart.modules.sales.models.Cart;
 import com.diddycart.modules.sales.models.CartItem;
 import com.diddycart.modules.identity.models.User;
-import com.diddycart.common.infrastructure.EventProducer;
 import com.diddycart.modules.identity.models.Address;
 import com.diddycart.modules.identity.repository.AddressRepository;
 import com.diddycart.modules.sales.repository.OrderRepository;
@@ -50,9 +48,6 @@ public class OrderService {
 
     @Autowired
     private AddressRepository addressRepository;
-
-    @Autowired
-    private EventProducer eventProducer;
 
     // Place an Order
     @Transactional
@@ -121,16 +116,6 @@ public class OrderService {
         // Save & Clear Cart
         Order savedOrder = orderRepository.save(order);
         cartService.clearCart(userId);
-
-        // Create Order Placed Event
-        OrderPlacedEvent event = new OrderPlacedEvent(
-                savedOrder.getId(),
-                savedOrder.getUser().getId(),
-                savedOrder.getUser().getEmail(),
-                savedOrder.getTotal());
-
-        // Send to Kafka
-        eventProducer.sendOrderPlaced(event);
 
         return mapToResponse(savedOrder);
     }

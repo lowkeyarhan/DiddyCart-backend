@@ -34,7 +34,11 @@ public class EventConsumer {
     public void handleOrderPlaced(OrderPlacedEvent event) {
         CompletableFuture.runAsync(() -> {
             System.out.println("⚙️ Processing order [Thread: " + Thread.currentThread().getName() + "]");
-            emailService.sendOrderConfirmation(event.getEmail(), event.getOrderId(), event.getAmount().toString());
+            emailService.sendOrderConfirmation(
+                    event.getEmail(),
+                    event.getOrderId(),
+                    event.getAmount().toString(),
+                    event.getItems());
         }, workerPool);
     }
 }

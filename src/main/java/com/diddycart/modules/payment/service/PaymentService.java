@@ -1,9 +1,11 @@
 package com.diddycart.modules.payment.service;
 
+import com.diddycart.common.infrastructure.EventProducer;
 import com.diddycart.modules.payment.dto.PaymentResponse;
 import com.diddycart.modules.sales.models.OrderStatus;
 import com.diddycart.modules.payment.models.PaymentMode;
 import com.diddycart.modules.payment.models.PaymentStatus;
+import com.diddycart.modules.sales.events.OrderPlacedEvent;
 import com.diddycart.modules.sales.models.Order;
 import com.diddycart.modules.payment.models.Payment;
 import com.diddycart.modules.sales.repository.OrderRepository;
@@ -17,6 +19,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class PaymentService {
@@ -26,6 +30,9 @@ public class PaymentService {
 
     @Autowired
     private OrderRepository orderRepository;
+
+    @Autowired
+    private EventProducer eventProducer;
 
     @Value("${razorpay.key.id}")
     private String keyId;
@@ -119,6 +126,25 @@ public class PaymentService {
                 order.setPaymentStatus(PaymentStatus.COMPLETED);
                 order.setStatus(OrderStatus.CONFIRMED);
                 orderRepository.save(order);
+
+                // Prepare OrderPlacedEvent (Item Details)
+                List<OrderPlacedEvent.ItemDetail> itemDetails = order.getOrderItems().stream()
+                        .map(item -> new OrderPlacedEvent.ItemDetail(
+                                item.getProduct().getName(),
+                                item.getQuantity(),
+                                item.getPrice()))
+                        .collect(Collectors.toList());
+
+                // Create OrderPlacedEvent
+                OrderPlacedEvent event = new OrderPlacedEvent(
+                        order.getId(),
+                        order.getUser().getId(),
+                        order.getUser().getEmail(),
+                        order.getTotal(),
+                        itemDetails);
+
+                // Send to Kafka
+                eventProducer.sendOrderPlaced(event);
 
                 // Return orderId by internalOrderId
                 return internalOrderId;

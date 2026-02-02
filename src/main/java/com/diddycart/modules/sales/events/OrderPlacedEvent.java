@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
+import java.util.List;
 
 @Data
 @AllArgsConstructor
@@ -13,4 +14,14 @@ public class OrderPlacedEvent {
     private Long userId;
     private String email;
     private BigDecimal amount;
+    private List<ItemDetail> items;
+
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class ItemDetail {
+        private String name;
+        private int quantity;
+        private BigDecimal price;
+    }
 }
