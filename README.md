@@ -1,328 +1,200 @@
-# 🛒 DiddyCart — Production-Grade E-commerce Backend
+# 🛒 DiddyCart — Enterprise E-Commerce Backend
 
-DiddyCart is a production-oriented REST API backend for e-commerce workflows. It provides secure authentication, vendor onboarding, product management, cart operations, order lifecycle handling, and payment simulation with an explicit caching layer for performance.
-
----
-
-## ✅ Project Overview
-
-- **Type:** RESTful API Backend
-- **Language:** Java 25
-- **Framework:** Spring Boot 4.0.1
-- **Build Tool:** Maven
-- **Database:** PostgreSQL
-- **Caching:** Redis via Spring Cache
-- **Auth:** Stateless JWT (HS256)
-- **Containerization:** Docker + Compose
+DiddyCart is a robust, production-ready e-commerce backend built with **Spring Boot 4** and **Java 21/25**. It is designed to handle high-concurrency workflows including user identity management, product cataloging, secure payment processing, and order fulfillment. The system follows a **Domain-Driven Design (DDD)** approach with a modular monolith structure, leveraging **Kafka** for event-driven asynchronous processing and **Redis** for high-performance caching. It is fully containerized with **Docker** and orchestration-ready for **Kubernetes**, ensuring scalability and resilience for enterprise environments.
 
 ---
 
-## 📦 Tech Stack
+## 🛠 Tech Stack & Tools
 
-**Core**
-
-- Spring Boot (WebMVC)
-- Spring Data JPA (Hibernate)
-- Spring Security
-- Jakarta Validation
-
-**Infrastructure**
-
-- PostgreSQL (Primary datastore)
-- Redis (Cache layer)
-- Docker (Local infra + containerized app)
-
-**Utilities**
-
-- jjwt (token creation/validation)
-- Lombok
-- SpringDoc OpenAPI (Swagger UI)
+| Category             | Technology        | Description                                     |
+| -------------------- | ----------------- | ----------------------------------------------- |
+| **Core**             | Java 21 / 25      | Latest LTS features (Records, Pattern Matching) |
+| **Framework**        | Spring Boot 4.0.1 | Modern application framework                    |
+| **Database**         | PostgreSQL        | Primary relational data store                   |
+| **Caching**          | Redis             | Session management & data caching               |
+| **Messaging**        | Apache Kafka      | Event streaming & decoupling services           |
+| **Security**         | Spring Security   | AuthZ/AuthN with JWT                            |
+| **Containerization** | Docker, K8s       | Deployment & orchestration                      |
+| **Monitoring**       | Prometheus        | Metrics collection                              |
+| **Testing**          | JUnit 5           | Unit & Integration testing                      |
 
 ---
 
-## ⚡ Caching Strategy (Redis)
+## 🚀 Features & Workflow
 
-**Provider**: Spring Cache Abstraction + Redis
+### Core Features
 
-### Configuration
+- **Identity Management:** Secure user registration & login (JWT).
+- **Product Catalog:** Advanced search, categorization, and inventory tracking.
+- **Cart Operations:** Persistent cart management using Redis.
+- **Order Lifecycle:** State machine for order status (Placed -> Shipped -> Delivered).
+- **Payment Processing:** Integrated mock payment gateway with failover logic.
+- **Notifications:** Async email dispatch for account activities.
 
-- **Serializer**: `GenericJackson2JsonRedisSerializer` (JSON, not Java binary)
-- **TTL**: 1 hour default for all caches
-- **Logging**: `LoggingCacheManager` prints HIT/MISS/PUT/EVICT
+### End-to-End Workflow
 
-### Cache Keys & Patterns
-
-| Cache Name        | Key                | Strategy                   | Notes                             |
-| ----------------- | ------------------ | -------------------------- | --------------------------------- |
-| `products`        | `productId`        | `@Cacheable`               | Evicted on update/delete          |
-| `cart`            | `userId`           | `@Cacheable` / `@CachePut` | Write-heavy updates               |
-| `orders`          | `userId_orderId`   | `@Cacheable` / `@CachePut` | Prevents cross-user cache leakage |
-| `payments`        | `orderId`          | `@Cacheable`               | Payment lookup                    |
-| `user_profile`    | `userId`           | `@Cacheable` / `@CachePut` | Evicted on vendor role change     |
-| `vendors_by_user` | `userId`           | `@Cacheable` / `@CachePut` | Vendor profile by user            |
-| `vendors`         | `vendorId`         | `@Cacheable` / `@CachePut` | Vendor profile by vendor ID       |
-| `address`         | `userId_addressId` | `@Cacheable` / `@CachePut` | Prevents cross-user leakage       |
-| `user_addresses`  | `userId`           | `@Cacheable`               | Evicted on address changes        |
-
-### Consistency Notes
-
-- Cart, address, vendor, and order updates are transactional.
-- Order/payment updates evict or refresh caches to maintain consistency.
+1. **Browse:** User checks `GET /api/products` (Cached).
+2. **Authentication:** User logs in via `POST /api/auth/login` -> receives JWT.
+3. **Cart:** User adds items to cart `POST /api/cart`.
+4. **Checkout:** `POST /api/orders` triggers order creation in PostgreSQL.
+5. **Payment:** Order logic initiates payment; updates status via callback.
+6. **Async Event:** strictly after transaction commit, `order-placed` event is pushed to Kafka.
+7. **Post-Processing:** Consumers pick up the event to:
+   - Deduct inventory.
+   - Send order confirmation email (via Mailtrap).
+   - Notify vendor dashboard.
 
 ---
 
-## 🧭 Architecture
+## 🔒 Security Model
 
-DiddyCart follows a classic layered architecture:
+The system implements a **Zero Trust** inspired security model using `SecurityConfig.java`.
 
-```text
-HTTP Request
-  ↓
-JwtAuthenticationFilter (token validation, role extraction)
-  ↓
-Controller (REST endpoints, validation)
-  ↓
-Service (business logic, caching, transactions)
-  ↓
-Repository (JPA/DB access)
-  ↓
-PostgreSQL
+### Role-Based Access Control (RBAC)
+
+- **ROLE_USER:** Can buy products, view own orders.
+- **ROLE_VENDOR:** Can create products, view sales analytics.
+- **ROLE_ADMIN:** Full system access.
+
+### Protected Routes
+
+All endpoints are secured by default, with specific exceptions:
+
+- 🟢 **Public:** `/api/auth/**`, `/api/products/**` (Read-only), `/payment.html`.
+- 🟡 **Authenticated:** `/api/orders/**`, `/api/cart/**`.
+- 🔴 **Admin/Vendor Only:** `/api/admin/**`, `/api/products` (Create/Update).
+
+_Security is enforced via `JwtAuthenticationFilter` which parses the `Authorization: Bearer <token>` header._
+
+---
+
+## ⚠️ Error Handling
+
+Centralized exception handling is managed by `GlobalExceptionHandler.java`.
+
+- **Validation Errors:** Returns `400 Bad Request` with a map of field names and error messages.
+- **Business Exceptions:** Custom exceptions like `ResourceNotFoundException` or `InsufficientStockException` return structured JSON.
+- **System Errors:** Generic 500 errors are masked to prevent leaking stack traces.
+
+**Example Error Response:**
+
+```json
+{
+  "timestamp": "2024-02-03T10:00:00",
+  "status": 404,
+  "error": "Not Found",
+  "message": "Product with ID 55 not found",
+  "path": "/api/products/55"
+}
 ```
 
-### Package Layout
+---
 
-- **controller/**: HTTP endpoints, request/response DTOs
-- **service/**: business logic, validation, transactions, cache controls
-- **repository/**: JPA repositories
-- **models/**: entity definitions
-- **config/**: security, cache, infrastructure
-- **util/**: JWT handling & filters
-- **exception/**: centralized error handling
+## 📨 Kafka Messaging & Multithreading
+
+### Event-Driven Logic
+
+Kafka is used to decouple the "write-heavy" order path from "read-heavy" notification systems.
+
+- **Topic:** `user-registration` (2 partitions) -> Welcome Email.
+- **Topic:** `order-placed` (2 partitions) -> Inventory Update, Email, Analytics.
+- **Topic:** `payment-failed` -> Retries or Admin Alert.
+
+### Multithreading Operations
+
+High-throughput tasks are handled by a custom `ThreadPoolTaskExecutor` (`kafkaWorkerPool`).
+
+- **Core Pool:** 5 Threads
+- **Max Pool:** 10 Threads
+- **Queue Capacity:** 100
+  This ensures that email sending or heavy calculations do not block the main HTTP request threads.
 
 ---
 
-## 🔐 Security Model
+## 💾 Database Schema
 
-**Authentication**
+The PostgreSQL schema is designed for 3rd Normal Form (3NF) compliance.
 
-- JWT Bearer tokens (HS256). Token subject = `userId` and includes a `role` claim.
-- `JwtAuthenticationFilter` extracts the token, validates it, and sets a `UsernamePasswordAuthenticationToken` with the user ID as principal.
-
-**Authorization**
-
-- Configured in `SecurityConfig`:
-  - `/api/auth/**` and `/api/products/**` are public
-  - `/api/admin/**` is restricted to `ROLE_ADMIN`
-  - everything else requires authentication
-
-**Password Security**
-
-- BCrypt hash (default strength)
+- **Normalization:**
+  - `users` table handles creds; `address` table handles shipping info (1:N).
+  - `products` and `category` are separated to allow flexible catalog updates.
+- **Indexing:**
+  - `idx_users_email` (Unique, B-Tree) for fast login lookups.
+  - `idx_products_price` for efficient filtering during browsing.
+  - `idx_orders_user_id` for quick order history retrieval.
 
 ---
 
-## 🗂️ Domain Model (Core Entities)
+## 🏗 How to Run
 
-- **User** ↔ **Vendor** (1:1) with role escalation to `VENDOR`
-- **User** → **Address** (1:N)
-- **Vendor** → **Product** (1:N)
-- **Product** → **ProductImage** (1:N)
-- **User** → **Cart** (1:1)
-- **Cart** → **CartItem** (1:N)
-- **Order** → **OrderItem** (1:N) with snapshotting of address and price
-- **Order** → **Payment** (1:1)
+### 1. Build the Project
 
----
-
-## ⚙️ Core Business Flows
-
-### 1) User Registration & Login
-
-1. Validate unique email
-2. Persist user with `USER` role
-3. Create empty cart
-4. Issue JWT (auto-login)
-
-### 2) Vendor Registration
-
-1. Validate GSTIN uniqueness
-2. Create vendor profile
-3. Promote role → `VENDOR`
-4. Issue fresh JWT containing updated role
-5. Evict cached user profile
-
-### 3) Product Management
-
-- Vendors can add/update/delete their own products
-- Ownership enforced by vendor user ID
-- Product images stored on local disk via `FileService`
-
-### 4) Cart Operations
-
-- Cart is persistent in DB
-- Add/update/remove items with stock validation
-- Cache is updated after write operations
-
-### 5) Order Placement
-
-1. Validate cart is non-empty
-2. Verify address ownership
-3. Snapshot address & prices
-4. Deduct stock per line item
-5. Persist order
-6. Clear cart
-
-### 6) Payment Processing (Simulated)
-
-- Creates `Payment` with transaction ID
-- Updates `Order.paymentStatus` to `COMPLETED`
-- Evicts order cache so clients see updated status immediately
-
----
-
-## 🧪 Error Handling & Validation
-
-- Centralized exception handling via `GlobalExceptionHandler`
-- Runtime errors return HTTP 400 with `{ "error": "message" }`
-- Validation errors return a map of `field -> errorMessage`
-
----
-
-## 📂 File Storage (Product Images)
-
-- Uploaded images are stored locally at `./uploads/`
-- DB stores a relative path like `/uploads/{filename}`
-- On product updates, old images are deleted
-
----
-
-## 🧩 Configuration
-
-Key configuration values from `application.yaml`:
-
-```
-spring.datasource.url=${DB_URL}
-spring.datasource.username=${DB_USERNAME}
-spring.datasource.password=${DB_PASSWORD}
-spring.data.redis.host=${SPRING_DATA_REDIS_HOST:localhost}
-spring.data.redis.port=${SPRING_DATA_REDIS_PORT:6379}
-diddycart.app.jwtSecret=${JWT_SECRET}
-diddycart.app.jwtExpirationMs=86400000
+```bash
+./mvnw clean install
+./mvnw clean package -DskipTests
 ```
 
-**Important:** For HS256, `JWT_SECRET` should be at least 32 bytes.
+### 2. Run Tests
 
----
-
-## 🧪 Testing
-
-Run test suite:
-
-```
+```bash
 ./mvnw test
 ```
 
----
+### 3. Docker Deployment
 
-## 🚀 Run Locally
+Rebuild the image and start the entire stack:
 
-### Prerequisites
-
-- JDK 25+
-- PostgreSQL
-- Docker Desktop (for Redis)
-
-### 1) Configure Environment
-
-```
-DB_URL=jdbc:postgresql://localhost:5432/diddycart
-DB_USERNAME=your_username
-DB_PASSWORD=your_password
-JWT_SECRET=your_secure_secret
-```
-
-### 2) Start Infrastructure
-
-```
-docker compose up -d
-```
-
-### 3) Run Application
-
-```
-./mvnw clean install
-./mvnw spring-boot:run
+```bash
+# Build and start the application image
+docker compose up -d --build
 ```
 
 ---
 
-## 🐳 Containerized Run (Docker)
+## 🌍 Environment Variables
 
+Create a `.env` file in the root directory (or set via export):
+
+```bash
+# Database Configuration
+DB_URL="Your_DB URL"
+DB_USERNAME="Your_DB_username"
+DB_PASSWORD="Your_DB_pass"
+
+# JWT Configuration
+JWT_SECRET="secret"
+JWT_EXPIRATION_MS=0000
+
+# Redis Configuration (for Docker)
+SPRING_DATA_REDIS_HOST=redis
+SPRING_DATA_REDIS_PORT=6379
+
+# mail Configuration
+MAIL_USERNAME="username"
+MAIL_PASSWORD="password"
+
+# Razorpay Configuration
+key_id="rzp_xxxx"
+key_secret="secret"
 ```
-docker build -t diddycart:latest .
-docker run -p 8080:8080 \
- -e DB_URL=... \
- -e DB_USERNAME=... \
- -e DB_PASSWORD=... \
- -e JWT_SECRET=... \
- -e SPRING_DATA_REDIS_HOST=... \
- -e SPRING_DATA_REDIS_PORT=6379 \
- diddycart:latest
-```
 
 ---
 
-## 📚 API Documentation
+## 📖 API Documentation
 
-Swagger UI is available at:
-
-- **http://localhost:8080/swagger-ui.html**
-
-OpenAPI JSON:
-
-- **http://localhost:8080/api-docs**
+Overview of key endpoints (Swagger UI: `http://localhost:8080/swagger-ui.html`):
 
 ---
 
-## 🧰 Operational Notes
-
-- Connection pool configured via HikariCP in `application.yaml`
-- `spring.jpa.hibernate.ddl-auto=update` is enabled for dev convenience
-- Consider using Flyway or Liquibase for production migrations
-- Redis cache TTL is 1 hour by default
-
----
-
-## ✅ Feature Summary
-
-- JWT-based authentication
-- Role-based authorization (USER, VENDOR, ADMIN)
-- Vendor onboarding with GSTIN validation
-- Product catalog with pagination + search
-- Product image upload & cleanup
-- Persistent cart with stock checks
-- Order placement with address & price snapshotting
-- Payment simulation with transaction ID
-- Redis-backed caching with explicit eviction/refresh patterns
-
----
-
-## 🗺️ System Architecture & Database
-
-Comprehensive architecture documentation:
+## 🏛 System Architecture
 
 - **System Architecture Diagram**: [docs/architecture-diagram.md](docs/architecture-diagram.md)
 - **Data Flow Diagram**: [docs/er-diagram.md](docs/er-diagram.md)
 - **Database ERD**: https://drawsql.app/teams/arhan-das/diagrams/diddycart
 
----
+The system is architected as a **Modular Monolith**:
 
-## 📌 Notes & Limitations
-
-- Payment processing is simulated (no external payment gateway)
-- Images are stored locally (not on object storage)
-- Kafka and Mail dependencies are present but not wired to flows yet
-
-```
-
-```
+1. **API Layer (Controllers):** REST entry points.
+2. **Service Layer:** Business rules & Transaction boundaries (`@Transactional`).
+3. **Data Layer (Repository):** JPA Interfaces interacting with Postgres.
+4. **Infrastructure:** Redis (Cache) and Kafka (Events) integration.
