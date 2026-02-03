@@ -20,6 +20,12 @@ services:
       ZOOKEEPER_TICK_TIME: 2000
     networks:
       - diddycart-network
+    # NEW: Healthcheck ensures Zookeeper is actually running
+    healthcheck:
+      test: echo srvr | nc localhost 2181 || exit 1
+      interval: 10s
+      retries: 5
+      start_period: 10s
 
   kafka:
     image: confluentinc/cp-kafka:7.5.0
@@ -27,17 +33,23 @@ services:
     ports:
       - "9092:9092"
     depends_on:
-      - zookeeper
+      zookeeper:
+        condition: service_healthy # Wait for Zookeeper to be HEALTHY, not just started
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      # Internal traffic uses kafka:29092, External uses localhost:9092
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
     networks:
       - diddycart-network
+    # NEW: Healthcheck ensures Kafka Broker is ready
+    healthcheck:
+      test: kafka-broker-api-versions --bootstrap-server localhost:9092 || exit 1
+      interval: 10s
+      retries: 5
+      start_period: 20s
 
   app:
     build:
@@ -51,7 +63,6 @@ services:
       - DB_USERNAME=${DB_USERNAME}
       - DB_PASSWORD=${DB_PASSWORD}
       - JWT_SECRET=${JWT_SECRET}
-      # This points to the internal Docker network address for Kafka
       - SPRING_KAFKA_BOOTSTRAP_SERVERS=kafka:29092
       - MAIL_USERNAME=${MAIL_USERNAME}
       - MAIL_PASSWORD=${MAIL_PASSWORD}
@@ -63,7 +74,7 @@ services:
       redis:
         condition: service_healthy
       kafka:
-        condition: service_started
+        condition: service_healthy # NEW: Wait for Kafka to be fully ready
     networks:
       - diddycart-network
     restart: unless-stopped
