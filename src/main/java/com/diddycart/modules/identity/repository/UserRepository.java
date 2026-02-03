@@ -22,4 +22,7 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     // ADMIN FEATURE: Search user by name (Partial match)
     List<User> findByNameContainingIgnoreCase(String name);
+
+    // Find user by reset password token
+    Optional<User> findByResetPasswordToken(String resetPasswordToken);
 }

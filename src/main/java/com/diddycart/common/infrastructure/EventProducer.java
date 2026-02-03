@@ -1,5 +1,6 @@
 package com.diddycart.common.infrastructure;
 
+import com.diddycart.modules.identity.events.PasswordResetEvent;
 import com.diddycart.modules.identity.events.UserRegisteredEvent;
 import com.diddycart.modules.payment.events.PaymentFailedEvent;
 import com.diddycart.modules.sales.events.OrderPlacedEvent;
@@ -27,5 +28,14 @@ public class EventProducer {
     public void sendPaymentFailed(PaymentFailedEvent event) {
         kafkaTemplate.send("payment-failed", event);
         System.out.println("📤 Produced PaymentFailedEvent for Order ID: " + event.getOrderId());
+    }
+
+    // Topic for Password Reset Events
+    private static final String TOPIC_PASSWORD_RESET = "identity.password-reset";
+
+    // Send PasswordResetEvent to Kafka
+    public void sendPasswordResetEvent(PasswordResetEvent event) {
+        kafkaTemplate.send(TOPIC_PASSWORD_RESET, event);
+        System.out.println("Produced PasswordResetEvent: " + event.getEmail());
     }
 }

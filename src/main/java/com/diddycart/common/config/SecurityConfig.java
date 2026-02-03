@@ -81,7 +81,14 @@ public class SecurityConfig {
                         .requestMatchers("/api/payments/callback").permitAll() // Allow Razorpay Callback URL
                         .requestMatchers("/payment.html", "/css/**", "/js/**").permitAll()
                         .requestMatchers("/checkout", "/payment-success", "/payment-failure").permitAll()
-                        .requestMatchers("/payment-success.html", "/payment-failure.html").permitAll()
+                        .requestMatchers(
+                                "/checkout",
+                                "/payment-success",
+                                "/payment-failure",
+                                "/reset-password",
+                                "/reset-password.html"
+                        ).permitAll()
+
                         .requestMatchers("/api/auth/**").permitAll() // Login/Register
                         .requestMatchers("/api/products/**").permitAll() // Catalog browsing
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")

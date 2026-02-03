@@ -14,6 +14,8 @@ public class EmailService {
     @Autowired
     private JavaMailSender mailSender;
 
+    // Send welcome email
+    @Async("kafkaWorkerPool")
     public void sendWelcomeEmail(String to, String name) {
         SimpleMailMessage message = new SimpleMailMessage();
         message.setTo(to);
@@ -23,6 +25,7 @@ public class EmailService {
         System.out.println("📧 Welcome email sent to " + to);
     }
 
+    // Send order confirmation email
     @Async("kafkaWorkerPool")
     public void sendOrderConfirmation(String to, Long orderId, String amount, String paymentMode,
             List<OrderPlacedEvent.ItemDetail> items) {
@@ -48,7 +51,7 @@ public class EmailService {
         System.out.println("📧 Sent Order Confirmation to " + to);
     }
 
-    // 2. ADD: Payment Failure Email
+    // send payment failure email
     @Async("kafkaWorkerPool")
     public void sendPaymentFailedEmail(String to, Long orderId, String amount, String paymentMode) {
         SimpleMailMessage message = new SimpleMailMessage();
@@ -64,5 +67,25 @@ public class EmailService {
         message.setText(text);
         mailSender.send(message);
         System.out.println("📧 Sent Payment Failure Email to " + to);
+    }
+
+    @Async("kafkaWorkerPool")
+    public void sendPasswordResetEmail(String to, String token) {
+        String resetUrl = "http://localhost:8080/reset-password?token=" + token;
+
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setTo(to);
+        message.setSubject("Reset your DiddyCart Password");
+        message.setText(String.format(
+                "Hello,\n\n" +
+                        "You have requested to reset your password.\n" +
+                        "Click the link below to change your password:\n\n" +
+                        "%s\n\n" +
+                        "This link will expire in 15 minutes.\n" +
+                        "If you did not request this, please ignore this email.",
+                resetUrl));
+
+        mailSender.send(message);
+        System.out.println("📧 Password reset email sent to " + to);
     }
 }

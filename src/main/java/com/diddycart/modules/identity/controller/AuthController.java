@@ -1,8 +1,10 @@
 package com.diddycart.modules.identity.controller;
 
 import com.diddycart.modules.identity.dto.authentication.AuthResponse;
+import com.diddycart.modules.identity.dto.authentication.ForgotPasswordRequest;
 import com.diddycart.modules.identity.dto.authentication.LoginRequest;
 import com.diddycart.modules.identity.dto.authentication.RegisterRequest;
+import com.diddycart.modules.identity.dto.authentication.ResetPasswordRequest;
 import com.diddycart.modules.identity.dto.profile.UserProfileRequest;
 import com.diddycart.modules.identity.dto.profile.UserProfileResponse;
 import com.diddycart.modules.identity.service.AuthService;
@@ -53,5 +55,18 @@ public class AuthController {
         Long userId = jwtUtil.extractUserId(jwt);
 
         return ResponseEntity.ok(authService.updateUserProfile(userId, request));
+    }
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<String> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        authService.forgotPassword(request);
+        // We always return 200 OK to prevent email enumeration attacks
+        return ResponseEntity.ok("If an account exists, a reset email has been sent.");
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<String> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        authService.resetPassword(request);
+        return ResponseEntity.ok("Password reset successfully. You can now login.");
     }
 }

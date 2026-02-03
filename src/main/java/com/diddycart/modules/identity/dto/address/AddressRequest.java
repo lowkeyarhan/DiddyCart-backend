@@ -33,6 +33,8 @@ public class AddressRequest {
     @Pattern(regexp = "^\\d{6}$", message = "Pincode must be 6 digits")
     private String pincode;
 
+    @NotBlank(message = "Phone number is required")
+    @Pattern(regexp = "^[6-9]\\d{9}$", message = "Phone number must be a valid 10-digit number starting with 6-9")
     private String phone;
 
     private String alternatePhone;

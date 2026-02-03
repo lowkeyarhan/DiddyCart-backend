@@ -1,5 +1,6 @@
 package com.diddycart.common.infrastructure;
 
+import com.diddycart.modules.identity.events.PasswordResetEvent;
 import com.diddycart.modules.identity.events.UserRegisteredEvent;
 import com.diddycart.modules.payment.events.PaymentFailedEvent;
 import com.diddycart.modules.sales.events.OrderPlacedEvent;
@@ -41,7 +42,7 @@ public class EventConsumer {
                 event.getItems());
     }
 
-    // 2. Add New Listener for Failure
+    // Listen for Payment Failed Event
     @KafkaListener(topics = "payment-failed", groupId = "diddycart-group")
     public void handlePaymentFailed(PaymentFailedEvent event) {
         emailService.sendPaymentFailedEmail(
@@ -49,5 +50,12 @@ public class EventConsumer {
                 event.getOrderId(),
                 event.getAmount().toString(),
                 event.getPaymentMode());
+    }
+
+    // Listen for Password Reset Event
+    @KafkaListener(topics = "identity.password-reset", groupId = "diddycart-group")
+    public void handlePasswordReset(PasswordResetEvent event) {
+        System.out.println("Consumed PasswordResetEvent: " + event.getEmail());
+        emailService.sendPasswordResetEmail(event.getEmail(), event.getToken());
     }
 }

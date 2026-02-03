@@ -6,7 +6,7 @@ import com.diddycart.modules.identity.models.AddressLabel;
 import lombok.Data;
 
 // Data Transfer Object for address responses
-// What the backend sends to the frontend regarding address information.
+// What the backend sends to the frontend regarding a specific address of the user
 
 @Data
 public class AddressResponse implements Serializable {

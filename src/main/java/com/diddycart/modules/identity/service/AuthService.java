@@ -1,18 +1,28 @@
 package com.diddycart.modules.identity.service;
 
 import com.diddycart.modules.identity.dto.authentication.AuthResponse;
+import com.diddycart.modules.identity.dto.authentication.ForgotPasswordRequest;
 import com.diddycart.modules.identity.dto.authentication.LoginRequest;
 import com.diddycart.modules.identity.dto.authentication.RegisterRequest;
 import com.diddycart.modules.identity.dto.profile.UserProfileRequest;
 import com.diddycart.modules.identity.dto.profile.UserProfileResponse;
+import com.diddycart.modules.identity.events.PasswordResetEvent;
 import com.diddycart.modules.identity.events.UserRegisteredEvent;
 import com.diddycart.modules.identity.models.UserRole;
 import com.diddycart.modules.identity.models.User;
 import com.diddycart.modules.sales.models.Cart;
 import com.diddycart.modules.sales.repository.CartRepository;
+
+import jakarta.transaction.Transactional;
+
 import com.diddycart.modules.identity.repository.UserRepository;
 import com.diddycart.common.infrastructure.EventProducer;
 import com.diddycart.common.security.JwtUtil;
+
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.UUID;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
@@ -165,5 +175,49 @@ public class AuthService {
         response.setRole(updatedUser.getRole());
 
         return response;
+    }
+
+    // Forgot Password - Generate reset token and send email
+    @Transactional
+    public void forgotPassword(ForgotPasswordRequest request) {
+
+        // Find user by email
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElse(null);
+
+        // If user not found, silently return
+        if (user == null) {
+            return;
+        }
+
+        // Generate reset token and set expiry (15 minutes from now)
+        String token = UUID.randomUUID().toString();
+        user.setResetPasswordToken(token);
+        user.setResetPasswordExpiresAt(Instant.now().plus(15, ChronoUnit.MINUTES));
+        userRepository.save(user);
+
+        // Produce PasswordResetEvent to Kafka
+        eventProducer.sendPasswordResetEvent(new PasswordResetEvent(user.getEmail(), token));
+    }
+
+    // Reset Password - Verify token and update password
+    @Transactional
+    public void resetPassword(com.diddycart.modules.identity.dto.authentication.ResetPasswordRequest request) {
+        User user = userRepository.findByResetPasswordToken(request.getToken())
+                .orElseThrow(() -> new RuntimeException("Invalid or expired password reset token"));
+
+        // Check if token has expired
+        if (user.getResetPasswordExpiresAt().isBefore(Instant.now())) {
+            throw new RuntimeException("Token has expired");
+        }
+
+        // Update password
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+
+        // Clear the token fields so it can't be used again
+        user.setResetPasswordToken(null);
+        user.setResetPasswordExpiresAt(null);
+
+        userRepository.save(user);
     }
 }

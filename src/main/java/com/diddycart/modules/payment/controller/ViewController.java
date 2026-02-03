@@ -26,4 +26,10 @@ public class ViewController {
     public Resource failurePage() {
         return new ClassPathResource("static/payment-failure.html");
     }
+
+    // Serve "static/reset-password.html" as HTML by "/reset-password"
+    @GetMapping(value = "/reset-password", produces = MediaType.TEXT_HTML_VALUE)
+    public Resource resetPasswordPage() {
+        return new ClassPathResource("static/reset-password.html");
+    }
 }
