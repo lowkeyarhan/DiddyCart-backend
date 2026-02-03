@@ -1,10 +1,49 @@
+# Build artifacts
 target/
+*.class
+*.jar
+*.war
+
+# IDE files
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+.project
+.classpath
+.settings/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Git
 .git/
 .gitignore
+.gitattributes
+
+# Documentation
 *.md
-.mvn/wrapper/maven-wrapper.jar
-.DS_Store
+README*
+docs/
+
+# Logs
 *.log
-.idea/
-*.iml
-.vscode/
+logs/
+
+# Test files
+src/test/
+
+# Docker files (don't need these inside the image)
+Dockerfile*
+docker-compose*.yml
+compose.yaml
+
+# Deployment files
+deployment/
+k8s/
+
+# Maven wrapper jar (we copy .mvn folder which includes it)
+# but excluding unnecessary files
+.mvn/wrapper/maven-wrapper.jar
