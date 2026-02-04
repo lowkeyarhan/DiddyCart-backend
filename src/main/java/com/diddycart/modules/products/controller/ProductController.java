@@ -1,8 +1,8 @@
 package com.diddycart.modules.products.controller;
 
 import com.diddycart.common.security.JwtUtil;
-import com.diddycart.modules.products.dto.ProductRequest;
-import com.diddycart.modules.products.dto.ProductResponse;
+import com.diddycart.modules.products.dto.product.ProductRequest;
+import com.diddycart.modules.products.dto.product.ProductResponse;
 import com.diddycart.modules.products.service.ProductService;
 
 import jakarta.validation.Valid;

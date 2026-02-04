@@ -8,9 +8,9 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.time.Instant;
 import java.util.List;
 
 @Repository
@@ -22,6 +22,12 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     // USER ORDERS: Fetch all orders for a specific user (without pagination)
     List<Order> findByUser(User user);
 
+    // USER ORDERS: Check if a delivered order exists for a specific product and
+    // user
+    @Query("SELECT COUNT(o) > 0 FROM Order o JOIN o.orderItems oi WHERE o.user.id = :userId AND oi.product.id = :productId AND o.status = 'DELIVERED'")
+    boolean existsDeliveredOrderForProduct(@Param("userId") Long userId,
+            @Param("productId") Long productId);
+
     // ADMIN ANALYTICS: Calculate total revenue from completed orders
     @Query("SELECT SUM(o.total) FROM Order o WHERE o.paymentStatus = :paymentStatus")
     Double calculateTotalRevenue(PaymentStatus paymentStatus);
@@ -30,9 +36,9 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     Long countByStatus(OrderStatus status);
 
     // ADMIN ANALYTICS: Find orders placed after a specific date
-    List<Order> findByCreatedAtAfter(Instant date);
+    List<Order> findByCreatedAtAfter(String date);
 
     // Scheduled Task: Find orders with specific status created before a certain
     // timestamp
-    List<Order> findByStatusAndCreatedAtBefore(OrderStatus status, Instant timestamp);
+    List<Order> findByStatusAndCreatedAtBefore(OrderStatus status, String timestamp);
 }

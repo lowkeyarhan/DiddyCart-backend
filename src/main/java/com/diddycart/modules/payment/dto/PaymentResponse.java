@@ -5,7 +5,6 @@ import com.diddycart.modules.payment.models.PaymentStatus;
 import lombok.Data;
 import java.io.Serializable;
 import java.math.BigDecimal;
-import java.time.Instant;
 
 @Data
 public class PaymentResponse implements Serializable {
@@ -18,6 +17,6 @@ public class PaymentResponse implements Serializable {
     private PaymentMode mode;
     private PaymentStatus status;
     private String transactionId;
-    private Instant createdAt;
+    private String createdAt;
     private String token; // JWT token for success page
 }

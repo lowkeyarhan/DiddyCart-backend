@@ -6,7 +6,8 @@ import com.diddycart.modules.identity.models.User;
 import lombok.Data;
 
 import java.math.BigDecimal;
-import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @Data
@@ -44,6 +45,6 @@ public class Order {
     private String pincode;
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    private Instant createdAt = Instant.now();
+    private String createdAt = LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME);
 
 }

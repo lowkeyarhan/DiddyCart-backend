@@ -38,12 +38,17 @@ services:
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      # Ensure the broker actually listens on both the internal (Docker) and host-mapped ports.
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092,PLAINTEXT_HOST://0.0.0.0:9092
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      # Shorter session timeout reduces the window where a previous broker session can block restart.
+      KAFKA_ZOOKEEPER_SESSION_TIMEOUT_MS: 6000
     networks:
       - diddycart-network
+    restart: unless-stopped
     # NEW: Healthcheck ensures Kafka Broker is ready
     healthcheck:
       test: kafka-broker-api-versions --bootstrap-server localhost:9092 || exit 1

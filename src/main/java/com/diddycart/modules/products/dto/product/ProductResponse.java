@@ -1,4 +1,4 @@
-package com.diddycart.modules.products.dto;
+package com.diddycart.modules.products.dto.product;
 
 import lombok.Data;
 
@@ -22,4 +22,6 @@ public class ProductResponse implements Serializable {
     private String categoryName;
     private String vendorStoreName;
     private List<String> imageUrls; // List of URLs only
+    private BigDecimal averageRating;
+    private Integer reviewCount;
 }

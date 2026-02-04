@@ -164,6 +164,8 @@ public class PaymentService {
                         order.getTotal(),
                         paymentMode.toString(),
                         itemDetails);
+
+                // Send Event to Event Producer
                 eventProducer.sendOrderPlaced(successEvent);
 
                 return internalOrderId;

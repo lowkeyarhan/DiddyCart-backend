@@ -1,4 +1,4 @@
-package com.diddycart.modules.products.dto;
+package com.diddycart.modules.products.dto.product;
 
 import jakarta.validation.constraints.*;
 import lombok.Data;

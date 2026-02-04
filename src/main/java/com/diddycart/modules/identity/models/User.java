@@ -3,7 +3,8 @@ package com.diddycart.modules.identity.models;
 import jakarta.persistence.*;
 import lombok.Data;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 @Data
 @Entity
@@ -34,12 +35,12 @@ public class User {
     private String resetPasswordToken;
 
     @Column(name = "reset_password_expires_at")
-    private Instant resetPasswordExpiresAt;
+    private String resetPasswordExpiresAt;
 
     @Column(name = "created_at", nullable = false, updatable = false)
-    private Instant createdAt = Instant.now();
+    private String createdAt = LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME);
 
     @Column(name = "updated_at")
-    private Instant updatedAt = Instant.now();
+    private String updatedAt = LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME);
 
 }

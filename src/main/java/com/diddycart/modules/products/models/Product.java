@@ -5,7 +5,8 @@ import com.diddycart.modules.identity.models.Vendor;
 import lombok.Data;
 
 import java.math.BigDecimal;
-import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @Data
@@ -37,8 +38,14 @@ public class Product {
     @Column(name = "stock_quantity", nullable = false)
     private Integer stockQuantity;
 
+    @Column(name = "average_rating")
+    private BigDecimal averageRating = BigDecimal.ZERO;
+
+    @Column(name = "review_count")
+    private Integer reviewCount = 0;
+
     @Column(name = "added_at")
-    private Instant addedAt = Instant.now();
+    private String addedAt = LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME);
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL)
     private List<ProductImage> images;

@@ -19,8 +19,8 @@ import com.diddycart.modules.identity.repository.UserRepository;
 import com.diddycart.common.infrastructure.EventProducer;
 import com.diddycart.common.security.JwtUtil;
 
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -193,7 +193,7 @@ public class AuthService {
         // Generate reset token and set expiry (15 minutes from now)
         String token = UUID.randomUUID().toString();
         user.setResetPasswordToken(token);
-        user.setResetPasswordExpiresAt(Instant.now().plus(15, ChronoUnit.MINUTES));
+        user.setResetPasswordExpiresAt(LocalDateTime.now().plusMinutes(15).format(DateTimeFormatter.ISO_DATE_TIME));
         userRepository.save(user);
 
         // Produce PasswordResetEvent to Kafka
@@ -207,7 +207,9 @@ public class AuthService {
                 .orElseThrow(() -> new RuntimeException("Invalid or expired password reset token"));
 
         // Check if token has expired
-        if (user.getResetPasswordExpiresAt().isBefore(Instant.now())) {
+        if (user.getResetPasswordExpiresAt() != null &&
+                LocalDateTime.parse(user.getResetPasswordExpiresAt(), DateTimeFormatter.ISO_DATE_TIME)
+                        .isBefore(LocalDateTime.now())) {
             throw new RuntimeException("Token has expired");
         }
 

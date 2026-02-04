@@ -9,6 +9,8 @@ import com.diddycart.modules.sales.models.OrderItem;
 import com.diddycart.modules.sales.dto.order.OrderItemResponse;
 import com.diddycart.modules.sales.dto.order.OrderRequest;
 import com.diddycart.modules.sales.dto.order.OrderResponse;
+import com.diddycart.modules.sales.dto.order.OrderListResponse;
+import com.diddycart.modules.sales.dto.order.OrderDetailResponse;
 import com.diddycart.modules.sales.models.Cart;
 import com.diddycart.modules.sales.models.CartItem;
 import com.diddycart.modules.identity.models.User;
@@ -16,9 +18,8 @@ import com.diddycart.modules.identity.models.Address;
 import com.diddycart.modules.identity.repository.AddressRepository;
 import com.diddycart.modules.sales.repository.OrderRepository;
 import com.diddycart.modules.identity.repository.UserRepository;
+import com.diddycart.modules.payment.repository.PaymentRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.cache.annotation.CachePut;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -26,8 +27,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -48,6 +49,9 @@ public class OrderService {
 
     @Autowired
     private AddressRepository addressRepository;
+
+    @Autowired
+    private PaymentRepository paymentRepository;
 
     // Place an Order
     @Transactional
@@ -121,10 +125,10 @@ public class OrderService {
     }
 
     // Get Orders for User by userId (with pagination)
-    public Page<OrderResponse> getUserOrders(Long userId, Pageable pageable) {
+    public Page<OrderListResponse> getUserOrders(Long userId, Pageable pageable) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
-        return orderRepository.findByUser(user, pageable).map(this::mapToResponse);
+        return orderRepository.findByUser(user, pageable).map(this::mapToListResponse);
     }
 
     // Cancel Unpaid Orders by every 10 minutes
@@ -132,7 +136,7 @@ public class OrderService {
     @Transactional
     public void cancelUnpaidOrders() {
         // Threshold: Orders older than 15 minutes
-        Instant timeoutThreshold = Instant.now().minus(15, ChronoUnit.MINUTES);
+        String timeoutThreshold = LocalDateTime.now().minusMinutes(15).format(DateTimeFormatter.ISO_DATE_TIME);
 
         // Find Orders older than threshold
         List<Order> expiredOrders = orderRepository.findByStatusAndCreatedAtBefore(OrderStatus.PENDING,
@@ -157,9 +161,8 @@ public class OrderService {
         }
     }
 
-    // Get Order by ID by orderId and userId checks cache first
-    @Cacheable(value = "orders", key = "#userId + '_' + #orderId")
-    public OrderResponse getOrderById(Long orderId, Long userId) {
+    // Get detailed Order by ID by orderId
+    public OrderDetailResponse getOrderById(Long orderId, Long userId) {
         // Find order by orderId
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found with id: " + orderId));
@@ -169,8 +172,8 @@ public class OrderService {
             throw new RuntimeException("You are not authorized to view this order");
         }
 
-        // Map Order to OrderResponse
-        return mapToResponse(order);
+        // Map Order to OrderDetailResponse
+        return mapToDetailResponse(order);
     }
 
     // Get All Orders by Admin only with pagination
@@ -180,7 +183,6 @@ public class OrderService {
 
     // Update Order Status by orderId and status by Admin and vendor only
     @Transactional
-    @CachePut(value = "orders", key = "#result.userId + '_' + #result.orderId")
     public OrderResponse updateOrderStatus(Long orderId, OrderStatus status) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found with id: " + orderId));
@@ -194,7 +196,6 @@ public class OrderService {
 
     // Cancel Order by orderId and userId (User/Admin)
     @Transactional
-    @CachePut(value = "orders", key = "#userId + '_' + #orderId")
     public OrderResponse cancelOrder(Long orderId, Long userId) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found with id: " + orderId));
@@ -221,7 +222,58 @@ public class OrderService {
         return mapToResponse(savedOrder);
     }
 
-    // Map Order to OrderResponse
+    // Map Order to OrderListResponse (for list view)
+    private OrderListResponse mapToListResponse(Order order) {
+        OrderListResponse response = new OrderListResponse();
+        response.setOrderId(order.getId());
+        response.setOrderDate(order.getCreatedAt());
+        response.setStatus(order.getStatus());
+        response.setBill(order.getTotal());
+
+        // Build simplified shipping address
+        String shippingAddress = String.join(", ",
+                order.getStreet() != null ? order.getStreet() : "",
+                order.getCity() != null ? order.getCity() : "",
+                order.getState() != null ? order.getState() : "",
+                order.getPincode() != null ? order.getPincode() : "");
+        response.setShippingAddress(shippingAddress);
+
+        // Map order items
+        response.setItems(mapOrderItems(order));
+
+        return response;
+    }
+
+    // Map Order to OrderDetailResponse (for detail view)
+    private OrderDetailResponse mapToDetailResponse(Order order) {
+        OrderDetailResponse response = new OrderDetailResponse();
+        response.setOrderId(order.getId());
+        response.setOrderDate(order.getCreatedAt());
+        response.setPaymentStatus(order.getPaymentStatus());
+        response.setTotalAmount(order.getTotal());
+
+        // Fetch payment mode from Payment entity
+        paymentRepository.findByOrder(order).ifPresent(payment -> {
+            response.setPaymentMode(payment.getMode());
+        });
+
+        // Build complete shipping address
+        String shippingAddress = String.join(", ",
+                order.getStreet() != null ? order.getStreet() : "",
+                order.getLandmark() != null ? order.getLandmark() : "",
+                order.getCity() != null ? order.getCity() : "",
+                order.getState() != null ? order.getState() : "",
+                order.getPincode() != null ? order.getPincode() : "");
+        response.setShippingAddress(shippingAddress);
+
+        // Map order items
+        response.setItems(mapOrderItems(order));
+
+        return response;
+    }
+
+    // Map Order to OrderResponse (legacy - still used by placeOrder,
+    // updateOrderStatus, cancelOrder)
     private OrderResponse mapToResponse(Order order) {
         OrderResponse response = new OrderResponse();
         response.setOrderId(order.getId());
@@ -240,6 +292,13 @@ public class OrderService {
         response.setShippingAddress(shippingAddress);
 
         // Map order items from OrderEntity to OrderItemResponse
+        response.setItems(mapOrderItems(order));
+
+        return response;
+    }
+
+    // Shared method to map order items
+    private List<OrderItemResponse> mapOrderItems(Order order) {
         List<OrderItemResponse> itemResponses = new ArrayList<>();
         if (order.getOrderItems() != null) {
             for (OrderItem item : order.getOrderItems()) {
@@ -248,17 +307,18 @@ public class OrderService {
                 if (item.getProduct() != null) {
                     itemResponse.setProductId(item.getProduct().getId());
                     itemResponse.setProductName(item.getProduct().getName());
+                    itemResponse.setQuantity(item.getQuantity());
+                    itemResponse.setPrice(item.getPrice());
                     if (item.getProduct().getImages() != null && !item.getProduct().getImages().isEmpty()) {
-
+                        itemResponse.setProductImage(item.getProduct().getImages().get(0).getImageUrl());
                     }
                 } else {
                     itemResponse.setProductId(null);
                     itemResponse.setProductName("Product no longer available");
                 }
+                itemResponses.add(itemResponse);
             }
         }
-        response.setItems(itemResponses);
-
-        return response;
+        return itemResponses;
     }
 }

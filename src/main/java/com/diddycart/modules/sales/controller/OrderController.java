@@ -2,6 +2,8 @@ package com.diddycart.modules.sales.controller;
 
 import com.diddycart.modules.sales.dto.order.OrderRequest;
 import com.diddycart.modules.sales.dto.order.OrderResponse;
+import com.diddycart.modules.sales.dto.order.OrderListResponse;
+import com.diddycart.modules.sales.dto.order.OrderDetailResponse;
 import com.diddycart.modules.sales.models.OrderStatus;
 import com.diddycart.modules.sales.service.OrderService;
 import com.diddycart.common.security.JwtUtil;
@@ -36,7 +38,7 @@ public class OrderController {
 
     // Get My Orders (with pagination)
     @GetMapping("/my-orders")
-    public ResponseEntity<Page<OrderResponse>> getMyOrders(
+    public ResponseEntity<Page<OrderListResponse>> getMyOrders(
             @RequestHeader("Authorization") String token,
             Pageable pageable) {
         Long userId = jwtUtil.extractUserId(token.substring(7));
@@ -45,7 +47,7 @@ public class OrderController {
 
     // Get Order by ID
     @GetMapping("/{id}")
-    public ResponseEntity<OrderResponse> getOrderById(
+    public ResponseEntity<OrderDetailResponse> getOrderById(
             @PathVariable Long id,
             @RequestHeader("Authorization") String token) {
         // Extract userId from token

@@ -67,7 +67,7 @@ spring:
 diddycart:
   app:
     jwtSecret: ${JWT_SECRET}
-    jwtExpirationMs: 86400000
+    jwtExpirationMs: 1814400000 # 21 days in milliseconds
 
 # Razorpay Configuration
 razorpay:
@@ -94,6 +94,9 @@ springdoc:
     - group: product
       display-name: product
       paths-to-match: /api/products/**
+    - group: review
+      display-name: review
+      paths-to-match: /api/products/*/reviews/**
     - group: cart
       display-name: cart
       paths-to-match: /api/cart/**

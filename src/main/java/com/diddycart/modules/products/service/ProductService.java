@@ -2,11 +2,11 @@ package com.diddycart.modules.products.service;
 
 import com.diddycart.modules.identity.models.Vendor;
 import com.diddycart.modules.identity.repository.VendorRepository;
+import com.diddycart.modules.products.dto.product.ProductRequest;
+import com.diddycart.modules.products.dto.product.ProductResponse;
 import com.diddycart.modules.products.models.Category;
 import com.diddycart.modules.products.models.Product;
 import com.diddycart.modules.products.models.ProductImage;
-import com.diddycart.modules.products.dto.ProductRequest;
-import com.diddycart.modules.products.dto.ProductResponse;
 import com.diddycart.modules.products.repository.CategoryRepository;
 import com.diddycart.modules.products.repository.ProductRepository;
 import com.diddycart.common.infrastructure.FileService;
@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.stream.Collectors;
 
@@ -204,6 +205,10 @@ public class ProductService {
         res.setStockQuantity(product.getStockQuantity());
         res.setCategoryName(product.getCategory().getType());
         res.setVendorStoreName(product.getVendor().getStoreName());
+
+        // Handle nulls gracefully (e.g. new products have no ratings)
+        res.setAverageRating(product.getAverageRating() != null ? product.getAverageRating() : BigDecimal.ZERO);
+        res.setReviewCount(product.getReviewCount() != null ? product.getReviewCount() : 0);
 
         // Map images by product.getImages()
         if (product.getImages() != null) {

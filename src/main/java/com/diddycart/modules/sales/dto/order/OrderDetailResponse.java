@@ -1,26 +1,25 @@
 package com.diddycart.modules.sales.dto.order;
 
-import com.diddycart.modules.sales.models.OrderStatus;
 import com.diddycart.modules.payment.models.PaymentStatus;
+import com.diddycart.modules.payment.models.PaymentMode;
 import lombok.Data;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.List;
 
-// Data Transfer Object for order responses
-// What the backend sends to the frontend regarding order information.
+// Data Transfer Object for detailed order responses
+// What the backend sends to the frontend regarding detailed order information.
 
 @Data
-public class OrderResponse implements Serializable {
+public class OrderDetailResponse implements Serializable {
     private static final long serialVersionUID = 1L;
 
     private Long orderId;
-    private Long userId;
     private String orderDate;
-    private BigDecimal totalAmount;
-    private OrderStatus status;
-    private PaymentStatus paymentStatus;
     private String shippingAddress;
+    private PaymentStatus paymentStatus;
+    private PaymentMode paymentMode;
+    private BigDecimal totalAmount;
     private List<OrderItemResponse> items;
 }
