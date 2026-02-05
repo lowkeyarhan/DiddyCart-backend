@@ -46,6 +46,58 @@ DiddyCart is a robust, production-ready e-commerce backend built with **Spring B
 
 ---
 
+## ⚙️ Advanced Concurrency & Data Integrity
+
+DiddyCart handles high-concurrency scenarios (e.g., "Flash Sales") where thousands of users might attempt to purchase the same limited inventory simultaneously. We employ strict locking mechanisms and deadlock prevention strategies to ensure data consistency without compromising data integrity.
+
+### 1. Handling Race Conditions (Pessimistic Locking)
+
+To prevent "Overselling", "Lost Updates", and "Duplicate Payments," DiddyCart bypasses standard Optimistic Locking in favor of **Pessimistic Write Locks** (`SELECT ... FOR UPDATE`) for critical write operations.
+
+- **Inventory Overselling:**
+  - **Problem:** Two users try to buy the last unit of a product simultaneously. Both read stock=1, both decrement to 0, and the database records -1 stock.
+  - **Solution:** In `OrderService.placeOrder`, we strictly acquire a **PESSIMISTIC_WRITE** lock on the `Product` row before checking stock.
+  - **Result:** Transaction B is forced to wait until Transaction A commits. Transaction B then reads the updated stock (0) and fails gracefully with an "Out of Stock" exception.
+
+- **Duplicate Payments:**
+  - **Problem:** A payment gateway sends two webhooks (e.g., `payment_captured`) for the same order simultaneously due to network retries.
+  - **Solution:** `PaymentService` locks the `Order` row using `findByIdForUpdate` before processing. It performs an **Idempotency Check** immediately after acquiring the lock: `if (order.status == COMPLETED) return;`.
+
+- **Concurrent Reviews & Likes:**
+  - **Problem:** Two users "like" a review at the exact same moment, causing a lost update on the counter.
+  - **Solution:** `ReviewService` locks the `Review` entity row before incrementing the like count, ensuring accurate tallying.
+
+### 2. Deadlock Prevention
+
+When locking multiple resources in a single transaction (e.g., buying 5 different items), the order of locking is critical to prevent Database Deadlocks.
+
+- **Strategy:** In `OrderService`, cart items are **programmatically sorted by Product ID** before processing.
+- **Why?** This ensures that every transaction acquires locks in the exact same order (e.g., Lock Product 10 -> Lock Product 20 -> Lock Product 30), eliminating the circular dependency (A waits for B, B waits for A) that causes deadlocks.
+
+### 3. Concurrency & Async Processing
+
+DiddyCart decouples "blocking" business logic from "non-blocking" I/O tasks to maximize throughput.
+
+- **Custom Thread Pool:** A dedicated `ThreadPoolTaskExecutor` (`kafkaWorkerPool`) handles background tasks.
+  - **Config:** Core Pool: 5, Max Pool: 10, Queue: 100.
+- **Kafka Offloading:**
+  - The `EventConsumer` listens to Kafka topics but does _not_ process heavy tasks (like sending emails) on the listener thread.
+  - Instead, it immediately offloads the work to the `kafkaWorkerPool` using `CompletableFuture.runAsync()`. This keeps the Kafka consumer lag near zero, even during traffic spikes.
+
+### 4. Caching Strategy (Redis)
+
+We use a **Look-Aside** caching pattern to reduce database load for high-traffic read operations.
+
+- **Cart:** `CartService` uses `@Cacheable` on `getCart` and `@CachePut` on `addToCart`. This ensures the active shopping session is served entirely from Redis, hitting Postgres only for persistence.
+- **Products:** Product details are cached (`@Cacheable "products"`) and evicted (`@CacheEvict`) only when an Admin updates the catalog, ensuring users always see up-to-date pricing without DB hits.
+
+### 5. Transaction Management
+
+All write operations are wrapped in Spring's `@Transactional` annotation. This adheres to the **ACID** properties:
+
+- **Atomicity:** If an inventory deduction fails, the entire Order creation is rolled back.
+- **Isolation:** The Pessimistic Locks ensure strictly serialized access to hot rows (Products/Orders).
+
 ## 🔒 Security Model
 
 The system implements a **Zero Trust** inspired security model using `SecurityConfig.java`.

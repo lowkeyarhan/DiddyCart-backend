@@ -90,9 +90,9 @@ public class ReviewService {
     public LikeToggleResponse toggleLike(Long userId, Long reviewId) {
 
         // Get the review
-        Review review = reviewRepository.findById(reviewId)
+        Review review = reviewRepository.findByIdForUpdate(reviewId)
                 .orElseThrow(() -> new RuntimeException("Review not found"));
-
+                
         // Get the user
         User user = userRepository.getReferenceById(userId);
 

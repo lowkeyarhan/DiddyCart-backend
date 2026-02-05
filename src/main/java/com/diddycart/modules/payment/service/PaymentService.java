@@ -116,7 +116,15 @@ public class PaymentService {
             if (internalOrderIdStr == null)
                 return null;
             Long internalOrderId = Long.parseLong(internalOrderIdStr);
-            Order order = orderRepository.findById(internalOrderId).orElseThrow();
+
+            // Fetch Order with PESSIMISTIC_WRITE lock to prevent concurrent payment
+            // processing
+            Order order = orderRepository.findByIdForUpdate(internalOrderId)
+                    .orElseThrow(() -> new RuntimeException("Order not found"));
+
+            if (order.getPaymentStatus() == PaymentStatus.COMPLETED) {
+                return internalOrderId;
+            }
 
             // Handle Failure
             if ("failed".equalsIgnoreCase(rzpStatus)) {

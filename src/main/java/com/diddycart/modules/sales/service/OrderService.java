@@ -157,7 +157,11 @@ public class OrderService {
 
             // Restore stock from Product
             for (OrderItem item : order.getOrderItems()) {
-                Product product = item.getProduct();
+
+                // Fetch product with PESSIMISTIC_WRITE lock to prevent overselling
+                Product product = productRepository.findByIdForUpdate(item.getProduct().getId())
+                        .orElseThrow(() -> new RuntimeException("Product not found"));
+
                 product.setStockQuantity(product.getStockQuantity() + item.getQuantity());
                 productRepository.save(product);
             }
@@ -221,7 +225,11 @@ public class OrderService {
 
         // Restore stock from Product
         for (OrderItem item : order.getOrderItems()) {
-            Product product = item.getProduct();
+
+            // Fetch product with PESSIMISTIC_WRITE lock to prevent overselling
+            Product product = productRepository.findByIdForUpdate(item.getProduct().getId())
+                    .orElseThrow(() -> new RuntimeException("Product not found"));
+
             product.setStockQuantity(product.getStockQuantity() + item.getQuantity());
             productRepository.save(product);
         }
