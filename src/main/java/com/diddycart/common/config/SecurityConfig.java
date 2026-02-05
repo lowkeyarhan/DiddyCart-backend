@@ -1,6 +1,7 @@
 package com.diddycart.common.config;
 
 import com.diddycart.common.security.JwtAuthenticationFilter;
+import com.diddycart.common.security.RateLimitFilter;
 import com.diddycart.modules.identity.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -26,6 +27,9 @@ public class SecurityConfig {
 
     @Autowired
     private JwtAuthenticationFilter jwtFilter;
+
+    @Autowired
+    private RateLimitFilter rateLimitFilter;
 
     @Autowired
     private UserRepository userRepository;
@@ -86,8 +90,8 @@ public class SecurityConfig {
                                 "/payment-success",
                                 "/payment-failure",
                                 "/reset-password",
-                                "/reset-password.html"
-                        ).permitAll()
+                                "/reset-password.html")
+                        .permitAll()
 
                         .requestMatchers("/api/auth/**").permitAll() // Login/Register
                         .requestMatchers("/api/products/**").permitAll() // Catalog browsing
@@ -95,6 +99,7 @@ public class SecurityConfig {
                         .anyRequest().authenticated())
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
+        http.addFilterBefore(rateLimitFilter, JwtAuthenticationFilter.class);
         http.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
