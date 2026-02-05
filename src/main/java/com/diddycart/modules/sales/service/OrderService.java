@@ -30,6 +30,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -89,8 +90,16 @@ public class OrderService {
         BigDecimal totalAmount = BigDecimal.ZERO;
         List<OrderItem> orderItems = new ArrayList<>();
 
-        for (CartItem cartItem : cart.getItems()) {
-            Product product = cartItem.getProduct();
+        // Sort cart items by product ID to prevent deadlocks
+        List<CartItem> sortedItems = new ArrayList<>(cart.getItems());
+        sortedItems.sort(Comparator.comparing(item -> item.getProduct().getId()));
+
+        for (CartItem cartItem : sortedItems) {
+
+            // Fetch product with PESSIMISTIC_WRITE lock to prevent overselling
+            Product product = productRepository.findByIdForUpdate(cartItem.getProduct().getId())
+                    .orElseThrow(() -> new RuntimeException("Product not found"));
+            // Check stock availability
             if (product.getStockQuantity() < cartItem.getQuantity()) {
                 throw new RuntimeException("Out of stock: " + product.getName());
             }

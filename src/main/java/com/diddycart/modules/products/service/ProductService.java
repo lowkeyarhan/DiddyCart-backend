@@ -9,6 +9,9 @@ import com.diddycart.modules.products.models.Product;
 import com.diddycart.modules.products.models.ProductImage;
 import com.diddycart.modules.products.repository.CategoryRepository;
 import com.diddycart.modules.products.repository.ProductRepository;
+
+import org.springframework.transaction.annotation.Transactional;
+
 import com.diddycart.common.infrastructure.FileService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
@@ -102,11 +105,13 @@ public class ProductService {
     }
 
     // ADMIN/VENDOR Update Product and update cache
+    @Transactional
     @CachePut(value = "products", key = "#id")
     public ProductResponse updateProduct(Long id, ProductRequest req, MultipartFile image, Long vendorUserId)
             throws IOException {
-        // Get product by id
-        Product product = productRepository.findById(id)
+
+        // Fetch product with PESSIMISTIC_WRITE lock to prevent concurrent updates
+        Product product = productRepository.findByIdForUpdate(id)
                 .orElseThrow(() -> new RuntimeException("Product not found with id: " + id));
 
         // Verify ownership by vendorUserId
@@ -163,9 +168,13 @@ public class ProductService {
     }
 
     // ADMIN/VENDOR Delete Product and remove from cache
+    @Transactional
     @CacheEvict(value = "products", key = "#id")
     public void deleteProduct(Long id, Long vendorUserId) throws IOException {
-        Product product = productRepository.findById(id)
+
+        // Fetch product with PESSIMISTIC_WRITE lock to prevent concurrent
+        // updates/deletes
+        Product product = productRepository.findByIdForUpdate(id)
                 .orElseThrow(() -> new RuntimeException("Product not found with id: " + id));
 
         // Verify ownership
@@ -188,8 +197,11 @@ public class ProductService {
     }
 
     // Restore stock when payment fails
+    @Transactional
     public void restoreStock(Long productId, Integer quantity) {
-        Product product = productRepository.findById(productId)
+
+        // Fetch product with PESSIMISTIC_WRITE lock to prevent concurrent updates
+        Product product = productRepository.findByIdForUpdate(productId)
                 .orElseThrow(() -> new RuntimeException("Product not found with id: " + productId));
         product.setStockQuantity(product.getStockQuantity() + quantity);
         productRepository.save(product);
