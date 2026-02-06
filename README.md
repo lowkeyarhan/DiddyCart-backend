@@ -67,6 +67,7 @@ For a detailed visual representation of the system architecture, including data 
 │ • Cart Cache       │    │ • Order Placed            │
 │ • User Profiles    │    │ • Payment Failed          │
 │ • Order Cache      │    │ • Password Reset          │
+│                    │    │ • Refund Requested        │
 └─────────┬──────────┘    └───────────────────────────┘
           │
 ┌─────────▼───────────────────────────────────────────┐
@@ -502,7 +503,12 @@ DiddyCart implements a **defense-in-depth security model** with multiple protect
 
 **Admin-Only Endpoints**:
 
-- `/api/admin/**` - System administration
+- `/api/admin/orders/**` - Order management & analytics
+  - Get all orders (paginated)
+  - Search orders by ID or user email
+  - Get orders by specific userId
+  - View detailed order information
+- `/api/admin/identity/**` - User management
 
 ### Security Features
 
@@ -694,6 +700,7 @@ DiddyCart uses **Apache Kafka** for asynchronous, decoupled event processing.
 | `order-placed`            | OrderService   | EventConsumer | Order confirmation email   |
 | `payment-failed`          | PaymentService | EventConsumer | Payment failure alert      |
 | `identity.password-reset` | AuthService    | EventConsumer | Password reset link        |
+| `refund-requested`        | OrderService   | EventConsumer | Async refund processing    |
 
 ### Event Flow
 
@@ -721,6 +728,63 @@ DiddyCart uses **Apache Kafka** for asynchronous, decoupled event processing.
 - Consumer retry logic for transient failures
 - Idempotency checks for duplicate events
 - Dead letter queue for persistent failures (future)
+
+### Asynchronous Refund Processing
+
+DiddyCart implements a sophisticated refund workflow that decouples order cancellation from payment refund processing:
+
+**Why Asynchronous?**
+
+- Order cancellation completes immediately (better UX)
+- Razorpay API calls don't block user requests
+- Refund processing happens in background worker threads
+- Failed refunds don't prevent order cancellation
+- Scalable: Multiple refunds can be processed concurrently
+
+**Refund Event Flow**:
+
+1. User cancels paid order → OrderService publishes `RefundRequestedEvent`
+2. Kafka persists event (survives crashes)
+3. EventConsumer receives event in background thread
+4. PaymentService calls Razorpay refund API
+5. Payment status updated to REFUNDED in database
+6. EmailService sends refund confirmation to user
+7. User receives notification about 5-7 day processing time
+
+**Refund Event Payload**:
+
+- Order ID, User ID, Email
+- Refund amount, Payment mode
+- Transaction ID for Razorpay API
+
+---
+
+## 🎯 Key Features
+
+### Order Management
+
+#### Flexible Cancellation Policy
+
+- Users can cancel orders until they are **shipped**
+- Supports cancellation for **PENDING** and **CONFIRMED** orders
+- Automatic inventory restoration upon cancellation
+- Orders cannot be cancelled once **SHIPPED** or **DELIVERED**
+
+#### Intelligent Refund Processing
+
+- **Automatic refund detection**: System checks if order was paid
+- **Async processing**: Refunds happen in background via Kafka
+- **Razorpay integration**: Direct API calls for refund processing
+- **Email notifications**: Users receive confirmation when refund is processed
+- **Timeline transparency**: Users informed about 5-7 business day processing
+
+#### Admin Order Analytics
+
+- View all orders with pagination and sorting
+- Search orders by Order ID or user email
+- Filter orders by specific user ID
+- Detailed order information with payment status
+- Real-time order status tracking
 
 ---
 
@@ -775,10 +839,33 @@ DiddyCart uses **Apache Kafka** for asynchronous, decoupled event processing.
 
 ### 5. Order Status Lifecycle
 
-**Status Flow**: PENDING → PROCESSING → SHIPPED → DELIVERED  
-**Cancellation**: PENDING → CANCELLED (stock restored)
+**Status Flow**: PENDING → CONFIRMED → SHIPPED → DELIVERED  
+**Cancellation Policy**:
 
-### 6. Scheduled Job: Auto-Cancel
+- Orders can be cancelled in **PENDING** or **CONFIRMED** status
+- Orders **cannot** be cancelled once **SHIPPED** or **DELIVERED**
+- Stock is automatically restored upon cancellation
+
+### 6. Order Cancellation with Refund Flow
+
+1. User requests order cancellation
+2. OrderService validates cancellation eligibility
+3. **Critical Section**:
+   - Lock products (pessimistic)
+   - Restore inventory to stock
+4. Check payment status:
+   - If payment completed → Publish `RefundRequestedEvent` to Kafka
+   - If payment pending → Skip refund
+5. Update order status to CANCELLED
+6. Transaction commits
+7. **Background Refund Processing**:
+   - EventConsumer receives refund event
+   - PaymentService processes refund via Razorpay API
+   - Update payment status to REFUNDED
+   - Send refund confirmation email to user
+8. User receives email notification (5-7 business days for credit)
+
+### 7. Scheduled Job: Auto-Cancel Unpaid Orders
 
 - Runs every 10 minutes
 - Finds orders older than 15 minutes (status: PENDING)
@@ -806,6 +893,7 @@ DiddyCart uses **Apache Kafka** for asynchronous, decoupled event processing.
 | **Payments**       | `/api/payments/**`  | Payment processing                  |
 | **Vendors**        | `/api/vendors/**`   | Vendor management                   |
 | **Addresses**      | `/api/addresses/**` | Delivery addresses                  |
+| **Admin**          | `/api/admin/**`     | Administrative operations           |
 
 ### Response Codes
 
