@@ -23,6 +23,9 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
         // Find by product Category
         Page<Product> findByCategoryId(Long categoryId, Pageable pageable);
 
+        // Check if any product exists in a category
+        boolean existsByCategoryId(Long categoryId);
+
         // Search + Filter by Price Range
         @Query("SELECT p FROM Product p WHERE " +
                         "LOWER(p.name) LIKE LOWER(CONCAT('%', :keyword, '%')) " +

@@ -93,9 +93,10 @@ public class SecurityConfig {
                                 "/reset-password.html")
                         .permitAll()
 
-                        .requestMatchers("/api/auth/**").permitAll() // Login/Register
-                        .requestMatchers("/api/products/**").permitAll() // Catalog browsing
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        .requestMatchers("/api/auth/**").permitAll() // Login/Register/Profile
+                        .requestMatchers("/api/products/**").permitAll() // Product browsing
+                        .requestMatchers("/api/categories/**").permitAll() // Category browsing
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN") // Admin endpoints
                         .anyRequest().authenticated())
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
