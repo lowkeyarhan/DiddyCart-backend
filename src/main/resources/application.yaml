@@ -91,6 +91,9 @@ springdoc:
     - group: authentication
       display-name: authentication
       paths-to-match: /api/auth/**
+    - group: admin
+      display-name: admin
+      paths-to-match: /api/admin/**
     - group: product
       display-name: product
       paths-to-match: /api/products/**

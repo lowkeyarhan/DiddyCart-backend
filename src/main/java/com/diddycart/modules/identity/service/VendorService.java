@@ -44,6 +44,11 @@ public class VendorService {
             throw new RuntimeException("User is already a vendor");
         }
 
+        // Check if user is an admin
+        if (user.getRole() == UserRole.ADMIN) {
+            throw new RuntimeException("Admin cannot be a vendor");
+        }
+
         // Check if GSTIN already exists
         if (vendorRepository.existsByGstin(request.getGstin())) {
             throw new RuntimeException("GSTIN already registered");
@@ -74,7 +79,7 @@ public class VendorService {
     }
 
     // Get vendor profile by user ID by userId checks cache first
-    // Sents the vendor profile data without user details
+    // Sends the vendor profile data without user details
     @Cacheable(value = "vendors_by_user", key = "#userId")
     public VendorProfileResponse getVendorByUserId(Long userId) {
         Vendor vendor = vendorRepository.findByUserId(userId)
@@ -84,7 +89,7 @@ public class VendorService {
     }
 
     // Get vendor profile by vendorId checks cache first
-    // Sents the full vendor details including user info by vendorId
+    // Sends the full vendor details including user info by vendorId
     @Cacheable(value = "vendors", key = "#vendorId")
     public VendorResponse getVendorById(Long vendorId) {
         Vendor vendor = vendorRepository.findById(vendorId)
@@ -92,7 +97,7 @@ public class VendorService {
         return mapToResponse(vendor);
     }
 
-    // Update vendor profile by userId and VendorRegistrationRequest
+    // Update vendor profile by userId and vendor registration request
     @Caching(put = {
             @CachePut(value = "vendors_by_user", key = "#userId"),
             @CachePut(value = "vendors", key = "#result.id")
@@ -120,7 +125,7 @@ public class VendorService {
         return mapToResponse(updatedVendor);
     }
 
-    // Map Vendor to VendorResponse
+    // Map vendor to vendor response
     private VendorResponse mapToResponse(Vendor vendor) {
         VendorResponse response = new VendorResponse();
         response.setId(vendor.getId());
@@ -133,7 +138,7 @@ public class VendorService {
         return response;
     }
 
-    // Map Vendor to VendorProfileResponse
+    // Map vendor to vendor profile response
     private VendorProfileResponse mapToProfileData(Vendor vendor) {
         VendorProfileResponse data = new VendorProfileResponse();
         data.setId(vendor.getId());
@@ -143,7 +148,7 @@ public class VendorService {
         return data;
     }
 
-    // Map Vendor to VendorRegisterResponse
+    // Map vendor to vendor register response
     private VendorRegisterResponse mapToRegisterResponse(Vendor vendor) {
         VendorRegisterResponse response = new VendorRegisterResponse();
         response.setId(vendor.getId());

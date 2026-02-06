@@ -12,6 +12,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+// Controller for vendor identity management
+// Handles requests for vendor profile management
+
 @RestController
 @RequestMapping("/api/vendor")
 public class VendorController {
@@ -24,7 +27,7 @@ public class VendorController {
 
     // Register a user as vendor (USER role required)
     @PostMapping("/register")
-    @PreAuthorize("hasAnyAuthority('ROLE_USER', 'ROLE_ADMIN')")
+    @PreAuthorize("hasAuthority('ROLE_USER')")
     public ResponseEntity<VendorRegisterResponse> registerVendor(
             @RequestBody @Valid VendorRegistrationRequest request,
             @RequestHeader("Authorization") String token) {
@@ -36,9 +39,9 @@ public class VendorController {
         return ResponseEntity.ok(response);
     }
 
-    // Get own vendor profile (Restricted View)
+    // Get own vendor profile (Restricted view)
     @GetMapping("/profile")
-    @PreAuthorize("hasAnyAuthority('ROLE_VENDOR', 'ROLE_ADMIN')")
+    @PreAuthorize("hasAuthority('ROLE_VENDOR')")
     public ResponseEntity<VendorProfileResponse> getVendorProfile(@RequestHeader("Authorization") String token) {
         String jwt = token.substring(7);
         Long userId = jwtUtil.extractUserId(jwt);
@@ -48,7 +51,7 @@ public class VendorController {
 
     // Update vendor profile
     @PutMapping("/profile")
-    @PreAuthorize("hasAnyAuthority('ROLE_VENDOR', 'ROLE_ADMIN')")
+    @PreAuthorize("hasAuthority('ROLE_VENDOR')")
     public ResponseEntity<VendorResponse> updateVendorProfile(
             @RequestBody @Valid VendorRegistrationRequest request,
             @RequestHeader("Authorization") String token) {
