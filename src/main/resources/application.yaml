@@ -16,7 +16,7 @@ spring:
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
-        spring.json.trusted.packages: "com.diddycart.modules.identity.events,com.diddycart.modules.sales.events,com.diddycart.common.events"
+        spring.json.trusted.packages: "com.diddycart.modules.identity.events,com.diddycart.modules.sales.events,com.diddycart.common.events,com.diddycart.modules.payment.events,com.diddycart.modules.products.events"
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
@@ -85,6 +85,9 @@ springdoc:
     operations-sorter: method
     tags-sorter: alpha
   group-configs:
+    - group: all
+      display-name: all
+      paths-to-match: /api/**
     - group: authentication
       display-name: authentication
       paths-to-match: /api/auth/**
