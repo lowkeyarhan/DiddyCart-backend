@@ -3,6 +3,8 @@ package com.diddycart.common.infrastructure;
 import com.diddycart.modules.identity.events.PasswordResetEvent;
 import com.diddycart.modules.identity.events.UserRegisteredEvent;
 import com.diddycart.modules.payment.events.PaymentFailedEvent;
+import com.diddycart.modules.payment.events.RefundRequestedEvent;
+import com.diddycart.modules.payment.service.PaymentService;
 import com.diddycart.modules.sales.events.OrderPlacedEvent;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -17,6 +19,9 @@ public class EventConsumer {
 
     @Autowired
     private EmailService emailService;
+
+    @Autowired
+    private PaymentService paymentService;
 
     @Autowired
     @Qualifier("kafkaWorkerPool")
@@ -57,5 +62,31 @@ public class EventConsumer {
     public void handlePasswordReset(PasswordResetEvent event) {
         System.out.println("Consumed PasswordResetEvent: " + event.getEmail());
         emailService.sendPasswordResetEmail(event.getEmail(), event.getToken());
+    }
+
+    // Listen for Refund Requested Event
+    @KafkaListener(topics = "refund-requested", groupId = "diddycart-group")
+    public void handleRefundRequested(RefundRequestedEvent event) {
+        CompletableFuture.runAsync(() -> {
+            System.out.println("⚙️ Processing refund for Order ID: " + event.getOrderId() + " [Thread: "
+                    + Thread.currentThread().getName() + "]");
+            try {
+                // Process the refund via Razorpay
+                paymentService.processRefund(event.getOrderId());
+
+                // Send refund confirmation email
+                emailService.sendRefundConfirmationEmail(
+                        event.getEmail(),
+                        event.getOrderId(),
+                        event.getAmount().toString(),
+                        event.getPaymentMode());
+
+                System.out.println("✅ Refund processed successfully for Order ID: " + event.getOrderId());
+            } catch (Exception e) {
+                System.err.println(
+                        "❌ Refund processing failed for Order ID: " + event.getOrderId() + ": " + e.getMessage());
+                e.printStackTrace();
+            }
+        }, workerPool);
     }
 }

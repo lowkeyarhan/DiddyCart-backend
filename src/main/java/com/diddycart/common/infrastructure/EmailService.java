@@ -88,4 +88,23 @@ public class EmailService {
         mailSender.send(message);
         System.out.println("📧 Password reset email sent to " + to);
     }
+
+    // Send refund confirmation email
+    @Async("kafkaWorkerPool")
+    public void sendRefundConfirmationEmail(String to, Long orderId, String amount, String paymentMode) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setTo(to);
+        message.setSubject("Refund Processed - Order #" + orderId);
+
+        String text = "Your refund has been processed successfully!\n\n" +
+                "Order ID: " + orderId + "\n" +
+                "Refund Amount: $" + amount + "\n" +
+                "Original Payment Mode: " + (paymentMode != null ? paymentMode.toUpperCase() : "Unknown") + "\n\n" +
+                "The refund will be credited to your original payment method within 5-7 business days.\n\n" +
+                "Thank you for shopping with DiddyCart!";
+
+        message.setText(text);
+        mailSender.send(message);
+        System.out.println("📧 Sent Refund Confirmation Email to " + to);
+    }
 }

@@ -204,4 +204,44 @@ public class PaymentService {
                 return PaymentMode.ONLINE;
         }
     }
+
+    // Process refund for cancelled orders
+    @Transactional
+    public void processRefund(Long orderId) {
+        Order order = orderRepository.findByIdForUpdate(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found"));
+
+        // Find payment for this order
+        Payment payment = paymentRepository.findByOrder(order)
+                .orElseThrow(() -> new RuntimeException("No payment found for this order"));
+
+        // Check if payment is completed and not already refunded
+        if (payment.getStatus() != PaymentStatus.COMPLETED) {
+            throw new RuntimeException(
+                    "Cannot refund: Payment is not completed. Current status: " + payment.getStatus());
+        }
+
+        try {
+            // Initiate refund via Razorpay
+            RazorpayClient razorpay = new RazorpayClient(keyId, keySecret);
+            JSONObject refundRequest = new JSONObject();
+            refundRequest.put("amount", payment.getAmount().multiply(new BigDecimal(100)).intValue());
+            refundRequest.put("speed", "normal"); // normal or optimum
+            refundRequest.put("receipt", "refund_" + order.getId());
+
+            // Create refund using payment ID
+            razorpay.payments.refund(payment.getTransactionId(), refundRequest);
+
+            // Update payment status to REFUNDED
+            payment.setStatus(PaymentStatus.REFUNDED);
+            paymentRepository.save(payment);
+
+            // Update order payment status
+            order.setPaymentStatus(PaymentStatus.REFUNDED);
+            orderRepository.save(order);
+
+        } catch (Exception e) {
+            throw new RuntimeException("Error processing refund: " + e.getMessage(), e);
+        }
+    }
 }

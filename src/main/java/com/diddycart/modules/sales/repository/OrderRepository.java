@@ -21,14 +21,13 @@ import java.util.Optional;
 @Repository
 public interface OrderRepository extends JpaRepository<Order, Long> {
 
-    // USER ORDERS: Fetch all orders for a specific user (with pagination)
+    // Public: Fetch all orders for a specific user (with pagination)
     Page<Order> findByUser(User user, Pageable pageable);
 
-    // USER ORDERS: Fetch all orders for a specific user (without pagination)
+    // Public: Fetch all orders for a specific user (without pagination)
     List<Order> findByUser(User user);
 
-    // USER ORDERS: Check if a delivered order exists for a specific product and
-    // user
+    // Check if a delivered order exists for a specific product and user
     @Query("SELECT COUNT(o) > 0 FROM Order o JOIN o.orderItems oi WHERE o.user.id = :userId AND oi.product.id = :productId AND o.status = 'DELIVERED'")
     boolean existsDeliveredOrderForProduct(@Param("userId") Long userId,
             @Param("productId") Long productId);
@@ -50,4 +49,13 @@ public interface OrderRepository extends JpaRepository<Order, Long> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT o FROM Order o WHERE o.id = :id")
     Optional<Order> findByIdForUpdate(@Param("id") Long id);
+
+    // Admin Search: By Order ID (Exact) OR User Email (Partial)
+    @Query("SELECT o FROM Order o WHERE " +
+            "CAST(o.id AS string) LIKE %:keyword% OR " +
+            "LOWER(o.user.email) LIKE LOWER(CONCAT('%', :keyword, '%'))")
+    Page<Order> searchOrders(@Param("keyword") String keyword, Pageable pageable);
+
+    // Admin Filter: By Status
+    Page<Order> findByStatus(OrderStatus status, Pageable pageable);
 }

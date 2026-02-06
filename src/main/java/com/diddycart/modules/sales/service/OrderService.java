@@ -26,6 +26,12 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.diddycart.modules.sales.dto.order.admin.AdminOrderSummaryResponse;
+import com.diddycart.modules.sales.dto.order.admin.AdminOrderDetailResponse;
+import com.diddycart.common.infrastructure.EventProducer;
+import com.diddycart.modules.payment.events.RefundRequestedEvent;
+import com.diddycart.modules.payment.models.Payment;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -53,6 +59,9 @@ public class OrderService {
 
     @Autowired
     private PaymentRepository paymentRepository;
+
+    @Autowired
+    private EventProducer eventProducer;
 
     // Place an Order
     @Transactional
@@ -210,6 +219,7 @@ public class OrderService {
     // Cancel Order by orderId and userId (User/Admin)
     @Transactional
     public OrderResponse cancelOrder(Long orderId, Long userId) {
+        // Find order by orderId
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found with id: " + orderId));
 
@@ -218,8 +228,10 @@ public class OrderService {
             throw new RuntimeException("You are not authorized to cancel this order");
         }
 
-        // Only allow cancellation if order is still PENDING (Pending payment)
-        if (order.getStatus() != OrderStatus.PENDING) {
+        // Allow cancellation only if order is NOT yet shipped
+        if (order.getStatus() == OrderStatus.SHIPPED ||
+                order.getStatus() == OrderStatus.DELIVERED ||
+                order.getStatus() == OrderStatus.CANCELLED) {
             throw new RuntimeException("Cannot cancel order. Current status: " + order.getStatus());
         }
 
@@ -234,9 +246,110 @@ public class OrderService {
             productRepository.save(product);
         }
 
+        // Publish refund event if payment was completed
+        if (order.getPaymentStatus() == PaymentStatus.COMPLETED) {
+            // Get payment details for the event
+            Payment payment = paymentRepository.findByOrder(order)
+                    .orElse(null);
+
+            if (payment != null) {
+                RefundRequestedEvent refundEvent = new RefundRequestedEvent(
+                        order.getId(),
+                        order.getUser().getId(),
+                        order.getUser().getEmail(),
+                        order.getTotal(),
+                        payment.getMode() != null ? payment.getMode().toString() : "UNKNOWN",
+                        payment.getTransactionId());
+
+                // Publish event to Kafka for async refund processing
+                eventProducer.sendRefundRequested(refundEvent);
+            }
+        }
+
+        // Update order status to CANCELLED
         order.setStatus(OrderStatus.CANCELLED);
         Order savedOrder = orderRepository.save(order);
+
+        // Map Order to OrderResponse
         return mapToResponse(savedOrder);
+    }
+
+    // Admin: Get all orders (summary view)
+    public Page<AdminOrderSummaryResponse> getAdminAllOrders(Pageable pageable) {
+        return orderRepository.findAll(pageable).map(this::mapToAdminSummary);
+    }
+
+    // Admin: Search orders by ID or Email
+    public Page<AdminOrderSummaryResponse> searchOrders(String keyword, Pageable pageable) {
+        return orderRepository.searchOrders(keyword, pageable).map(this::mapToAdminSummary);
+    }
+
+    // Admin: Filter orders by status
+    public Page<AdminOrderSummaryResponse> getOrdersByStatus(OrderStatus status, Pageable pageable) {
+        return orderRepository.findByStatus(status, pageable).map(this::mapToAdminSummary);
+    }
+
+    // Admin: Get order detail by order ID (bypasses ownership check)
+    public AdminOrderDetailResponse getAdminOrderById(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found"));
+
+        return mapToAdminDetail(order);
+    }
+
+    // Admin: Get all orders by userId (bypasses ownership check)
+    public Page<AdminOrderSummaryResponse> getOrdersByUserId(Long userId, Pageable pageable) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
+        return orderRepository.findByUser(user, pageable).map(this::mapToAdminSummary);
+    }
+
+    // Map Order to AdminOrderSummaryResponse (for summary view)
+    private AdminOrderSummaryResponse mapToAdminSummary(Order order) {
+        AdminOrderSummaryResponse res = new AdminOrderSummaryResponse();
+        res.setOrderId(order.getId());
+        res.setCustomerEmail(order.getUser().getEmail());
+        res.setOrderDate(order.getCreatedAt());
+        res.setStatus(order.getStatus());
+        res.setPaymentStatus(order.getPaymentStatus());
+        res.setTotalAmount(order.getTotal());
+        return res;
+    }
+
+    // Map Order to AdminOrderDetailResponse (for detail view)
+    private AdminOrderDetailResponse mapToAdminDetail(Order order) {
+        AdminOrderDetailResponse res = new AdminOrderDetailResponse();
+        res.setOrderId(order.getId());
+        res.setOrderDate(order.getCreatedAt());
+        res.setStatus(order.getStatus());
+
+        // Customer Info
+        res.setUserId(order.getUser().getId());
+        res.setCustomerName(order.getUser().getName());
+        res.setCustomerEmail(order.getUser().getEmail());
+        res.setCustomerPhone(order.getUser().getPhone());
+
+        // Payment Info
+        res.setPaymentStatus(order.getPaymentStatus());
+        // Fetch payment details
+        paymentRepository.findByOrder(order).ifPresent(payment -> {
+            res.setPaymentMode(payment.getMode());
+            res.setTransactionId(payment.getTransactionId());
+        });
+
+        // Shipping
+        String address = String.join(", ",
+                order.getStreet() != null ? order.getStreet() : "",
+                order.getCity() != null ? order.getCity() : "",
+                order.getState() != null ? order.getState() : "",
+                order.getPincode() != null ? order.getPincode() : "");
+        res.setShippingAddress(address);
+
+        // Items (Reusing existing helper mapOrderItems)
+        res.setItems(mapOrderItems(order));
+        res.setTotalAmount(order.getTotal());
+
+        return res;
     }
 
     // Map Order to OrderListResponse (for list view)
