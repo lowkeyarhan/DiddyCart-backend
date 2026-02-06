@@ -99,8 +99,10 @@ public class SecurityConfig {
                         .anyRequest().authenticated())
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
-        http.addFilterBefore(rateLimitFilter, JwtAuthenticationFilter.class);
+        // Add filters in the correct order
+        // In Spring Security 7.x, you must use standard filter classes as anchor points
         http.addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+        http.addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

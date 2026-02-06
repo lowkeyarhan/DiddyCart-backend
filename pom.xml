@@ -91,10 +91,12 @@
 			<artifactId>bucket4j-redis</artifactId>
 			<version>8.7.0</version>
 		</dependency>
+
+		<!-- Source: https://mvnrepository.com/artifact/org.redisson/redisson -->
 		<dependency>
 			<groupId>org.redisson</groupId>
-			<artifactId>redisson-spring-boot-starter</artifactId>
-			<version>3.25.0</version>
+			<artifactId>redisson</artifactId>
+			<version>4.2.0</version>
 		</dependency>
 
 		<!-- JWT Dependencies -->

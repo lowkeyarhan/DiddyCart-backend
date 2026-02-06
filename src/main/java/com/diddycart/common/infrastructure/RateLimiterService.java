@@ -20,7 +20,11 @@ public class RateLimiterService {
         @Autowired
         public RateLimiterService(RedissonClient redissonClient) {
                 // Configure Redis backend for Bucket4j
-                this.proxyManager = RedissonBasedProxyManager.builderFor((CommandAsyncExecutor) redissonClient)
+                // Access CommandAsyncExecutor through Redisson implementation class
+                org.redisson.Redisson redisson = (org.redisson.Redisson) redissonClient;
+                CommandAsyncExecutor commandExecutor = redisson.getCommandExecutor();
+
+                this.proxyManager = RedissonBasedProxyManager.builderFor(commandExecutor)
                                 .withExpirationStrategy(ExpirationAfterWriteStrategy
                                                 .basedOnTimeForRefillingBucketUpToMax(Duration.ofMinutes(10)))
                                 .build();
@@ -33,7 +37,7 @@ public class RateLimiterService {
                                 : getAnonymousConfig(); // 20 req/min for IPs (Stricter!)
 
                 // Retrieve or create the bucket in Redis
-                return proxyManager.builder().build(key.getBytes(), configuration);
+                return proxyManager.builder().build(key, configuration);
         }
 
         // Limit for Logged-in Users (User ID based)
