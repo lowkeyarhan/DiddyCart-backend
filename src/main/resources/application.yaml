@@ -85,18 +85,18 @@ springdoc:
     operations-sorter: method
     tags-sorter: alpha
   group-configs:
-    - group: all
-      display-name: All
-      paths-to-match: /**
     - group: authentication
       display-name: authentication
       paths-to-match: /api/auth/**
     - group: admin
       display-name: admin
       paths-to-match: /api/admin/**
-    - group: product
-      display-name: product
+    - group: products
+      display-name: products
       paths-to-match: /api/products/**
+    - group: categories
+      display-name: categories
+      paths-to-match: /api/categories/**
     - group: review
       display-name: review
       paths-to-match: /api/products/*/reviews/**

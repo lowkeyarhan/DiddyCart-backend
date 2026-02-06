@@ -4,6 +4,7 @@ import com.diddycart.modules.identity.models.User;
 import com.diddycart.modules.identity.repository.UserRepository;
 import com.diddycart.modules.products.dto.review.ReviewRequest;
 import com.diddycart.modules.products.dto.review.ReviewResponse;
+import com.diddycart.modules.products.dto.review.AdminReviewResponse;
 import com.diddycart.modules.products.dto.review.LikeToggleResponse;
 import com.diddycart.modules.products.models.Product;
 import com.diddycart.modules.products.models.Review;
@@ -92,7 +93,7 @@ public class ReviewService {
         // Get the review
         Review review = reviewRepository.findByIdForUpdate(reviewId)
                 .orElseThrow(() -> new RuntimeException("Review not found"));
-                
+
         // Get the user
         User user = userRepository.getReferenceById(userId);
 
@@ -160,6 +161,72 @@ public class ReviewService {
         product.setReviewCount(newCount);
         product.setAverageRating(newAvg);
         productRepository.save(product);
+    }
+
+    // Admin: Delete Review and Recalculate Rating
+    @Transactional
+    @Caching(evict = {
+            @CacheEvict(value = "products", key = "#result"),
+            @CacheEvict(value = "product_reviews", allEntries = true)
+    })
+    public Long deleteReview(Long reviewId) {
+        Review review = reviewRepository.findById(reviewId)
+                .orElseThrow(() -> new RuntimeException("Review not found"));
+
+        Product product = review.getProduct();
+        Long productId = product.getId();
+
+        // Delete the review
+        reviewRepository.delete(review);
+
+        // Flush to ensure the deletion is committed before we calculate stats
+        reviewRepository.flush();
+
+        // Recalculate Stats from Database
+        Long newCount = reviewRepository.countByProductId(productId);
+        Double newAvg = reviewRepository.findAverageRatingByProductId(productId);
+
+        // Update Product Entity
+        product.setReviewCount(newCount != null ? newCount.intValue() : 0);
+
+        // Handle null if no reviews left (avoid NPE)
+        BigDecimal avgRating = (newAvg != null) ? BigDecimal.valueOf(newAvg) : BigDecimal.ZERO;
+        product.setAverageRating(avgRating.setScale(1, RoundingMode.HALF_UP));
+
+        productRepository.save(product);
+
+        // Return productId to be used as the key for CacheEvict
+        return productId;
+    }
+
+    // Admin: Get All Reviews (Global List)
+    public Page<AdminReviewResponse> getAllReviews(Pageable pageable) {
+        return reviewRepository.findAll(pageable)
+                .map(this::mapToAdminResponse);
+    }
+
+    // Map the review to an admin response
+    private AdminReviewResponse mapToAdminResponse(Review review) {
+        AdminReviewResponse res = new AdminReviewResponse();
+        res.setId(review.getId());
+        res.setRating(review.getRating());
+        res.setComment(review.getComment());
+        res.setCreatedAt(review.getCreatedAt());
+
+        // Map the user
+        if (review.getUser() != null) {
+            res.setUserId(review.getUser().getId());
+            res.setUserName(review.getUser().getName());
+            res.setUserEmail(review.getUser().getEmail());
+        }
+
+        // Map the product
+        if (review.getProduct() != null) {
+            res.setProductId(review.getProduct().getId());
+            res.setProductName(review.getProduct().getName());
+        }
+
+        return res;
     }
 
     // Map the review to a response
